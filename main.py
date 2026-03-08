@@ -17,7 +17,6 @@ from datetime import datetime, timedelta
 from sqlalchemy import func
 from sqlalchemy.orm import joinedload
 import sys
-import os
 sys.path.append(os.path.join(os.path.dirname(__file__), 'scripts'))
 import analytics_engine
 import json
@@ -59,7 +58,7 @@ VAPID_CLAIMS = {"sub": "mailto:nixon@melo-finance.com"}
 
 if not VAPID_PRIVATE_KEY or not VAPID_PUBLIC_KEY:
     print("WARNING: VAPID keys not set. Push notifications disabled.")
-    VAPID_PUBLIC_KEY = "" # Evitar errores en templates
+    VAPID_PUBLIC_KEY = ""
 
 
 # --- CSRF & Security Helpers ---
@@ -68,7 +67,7 @@ def generate_csrf_token():
 
 def verify_csrf_token(token: str) -> bool:
     try:
-        signer.loads(token, max_age=3600) # 1 hora de validez
+        signer.loads(token, max_age=3600)
         return True
     except:
         return False
@@ -80,8 +79,8 @@ _login_attempts = defaultdict(list)
 
 def check_rate_limit(ip: str):
     now = time.time()
-    _login_attempts[ip] = [t for t in _login_attempts[ip] if now - t < 60] # Ventana de 1 min
-    if len(_login_attempts[ip]) >= 5: # Máximo 5 intentos por minuto
+    _login_attempts[ip] = [t for t in _login_attempts[ip] if now - t < 60]
+    if len(_login_attempts[ip]) >= 5:
         return False
     _login_attempts[ip].append(now)
     return True
@@ -92,7 +91,6 @@ def hash_password(password: str) -> str:
     return bcrypt.hashpw(pwd_bytes, salt).decode('utf-8')
 
 def verify_password(plain: str, hashed: str) -> bool:
-    # Compatibilidad rógresiva: si no está hasheado (prefijo bcrypt), comparar texto plano y re-hashear
     if not hashed.startswith("$2b$"):
         return plain == hashed
     plain_bytes = plain.encode('utf-8')[:72]
@@ -120,7 +118,7 @@ UPLOAD_DIR = os.path.join("static", "uploads")
 if not os.path.exists(UPLOAD_DIR):
     os.makedirs(UPLOAD_DIR)
 
-# Templates (Stitch)
+# Templates
 if not os.path.exists("./templates"):
     os.makedirs("./templates")
 templates = Jinja2Templates(directory="templates")
@@ -141,16 +139,12 @@ def crear_alerta(db: Session, user_id: int, titulo: str, mensaje: str, tipo: str
     db.add(new_notif)
     db.commit()
 
-# Utilidad: Interés calculado (simple)
 def calculate_interest(loan: Loan) -> float:
-    """Calcula el interés base usando el % sobre el monto principal"""
     return loan.monto_principal * (loan.porcentaje_interes / 100)
 
 @app.on_event("startup")
 def startup_event():
-    """Al iniciar, corremos el scraper si es necesario."""
     db = next(get_db())
-    # Chequear e inicializar si es necesario la tasa actual del BCV
     update_bcv_rate_if_needed(db)
 
 def get_current_user(request: Request, db: Session = Depends(get_db)):
@@ -158,7 +152,7 @@ def get_current_user(request: Request, db: Session = Depends(get_db)):
     if not token:
         return None
     try:
-        user_id = signer.loads(token, max_age=60 * 60 * 24 * 30)  # 30 días
+        user_id = signer.loads(token, max_age=60 * 60 * 24 * 30)
     except (BadSignature, SignatureExpired):
         return None
     return db.query(User).filter(User.id == user_id).first()
@@ -172,7 +166,6 @@ def require_user(current_user: User = Depends(get_current_user)):
 
 @app.get("/auth/webauthn/register/options")
 def webauthn_register_options(db: Session = Depends(get_db), current_user: User = Depends(require_user)):
-    """Genera las opciones para registrar una nueva credencial biométrica."""
     if not current_user.webauthn_id:
         current_user.webauthn_id = os.urandom(16).hex()
         db.commit()
@@ -191,13 +184,11 @@ def webauthn_register_options(db: Session = Depends(get_db), current_user: User 
     
     json_options = options_to_json(options)
     res = Response(content=json_options, media_type="application/json")
-    # Guardamos el challenge en una cookie temporal para verificar luego
     res.set_cookie("reg_options", signer.dumps(json_options), max_age=300, httponly=True, secure=True if RP_ID != "localhost" else False)
     return res
 
 @app.post("/auth/webauthn/register/verify")
 async def webauthn_register_verify(request: Request, db: Session = Depends(get_db), current_user: User = Depends(require_user)):
-    """Verifica y guarda la nueva credencial biométrica."""
     data = await request.json()
     options_cookie = request.cookies.get("reg_options")
     if not options_cookie:
@@ -212,7 +203,6 @@ async def webauthn_register_verify(request: Request, db: Session = Depends(get_d
             expected_rp_id=RP_ID,
         )
         
-        # Guardar en base de datos
         new_cred = WebAuthnCredential(
             user_id=current_user.id,
             credential_id=registration_verification.credential_id.hex(),
@@ -228,7 +218,6 @@ async def webauthn_register_verify(request: Request, db: Session = Depends(get_d
 
 @app.get("/auth/webauthn/login/options")
 def webauthn_login_options(username: str, db: Session = Depends(get_db)):
-    """Genera opciones para iniciar sesión con biometría."""
     user = db.query(User).filter(User.username == username).first()
     if not user or not user.credentials:
         raise HTTPException(status_code=404, detail="Usuario no tiene biometría configurada")
@@ -250,7 +239,6 @@ def webauthn_login_options(username: str, db: Session = Depends(get_db)):
 
 @app.post("/auth/webauthn/login/verify")
 async def webauthn_login_verify(request: Request, db: Session = Depends(get_db)):
-    """Verifica la firma biométrica e inicia sesión."""
     data = await request.json()
     options_cookie = request.cookies.get("auth_options")
     user_id_cookie = request.cookies.get("auth_user")
@@ -264,9 +252,7 @@ async def webauthn_login_verify(request: Request, db: Session = Depends(get_db))
 
     try:
         options_json = json.loads(signer.loads(options_cookie))
-        # El credential_id en el response viene en base64url format
-        cred_id_raw = data["rawId"]  # base64url string
-        # Decodificar de base64url a bytes y luego a hex para buscar en DB
+        cred_id_raw = data["rawId"]
         import base64
         cred_id_bytes = base64.urlsafe_b64decode(cred_id_raw + "==")
         cred_id_hex = cred_id_bytes.hex()
@@ -284,12 +270,10 @@ async def webauthn_login_verify(request: Request, db: Session = Depends(get_db))
             credential_current_sign_count=db_cred.sign_count,
         )
         
-        # Actualizar contador
         db_cred.sign_count = authentication_verification.new_sign_count
         user.last_login = datetime.utcnow()
         db.commit()
         
-        # Iniciar sesión (estilo melo-finance)
         token = signer.dumps(user.id)
         res = Response(content=json.dumps({"status": "ok"}), media_type="application/json")
         res.set_cookie("session_token", token, max_age=60 * 60 * 24 * 30, httponly=True, secure=True if RP_ID != "localhost" else False)
@@ -300,10 +284,8 @@ async def webauthn_login_verify(request: Request, db: Session = Depends(get_db))
 
 @app.post("/push/subscribe")
 async def push_subscribe(request: Request, db: Session = Depends(get_db), current_user: User = Depends(require_user)):
-    """Guarda una nueva suscripción push del navegador."""
     try:
         data = await request.json()
-        # Verificar si ya existe
         existing = db.query(PushSubscription).filter(PushSubscription.endpoint == data["endpoint"]).first()
         if existing:
             return {"status": "ok", "message": "Ya suscrito"}
@@ -324,7 +306,6 @@ async def push_subscribe(request: Request, db: Session = Depends(get_db), curren
 
 @app.get("/push/test")
 def push_test(db: Session = Depends(get_db), current_user: User = Depends(require_user)):
-    """Envía una notificación de prueba para verificar que el sistema funciona."""
     if not current_user or not current_user.push_subscriptions:
         return {"status": "error", "message": "No hay suscripciones activas en este dispositivo."}
     
@@ -376,11 +357,9 @@ def login_post(
     csrf_token: str = Form(""),
     db: Session = Depends(get_db)
 ):
-    # 1. Verificar CSRF
     if not verify_csrf_token(csrf_token):
         raise HTTPException(status_code=403, detail="CSRF Token inválido")
     
-    # 2. Rate Limit
     if not check_rate_limit(request.client.host):
         return RedirectResponse(url="/login?error=too_many_requests", status_code=status.HTTP_303_SEE_OTHER)
 
@@ -388,16 +367,13 @@ def login_post(
     if not user or not verify_password(password, user.hashed_password):
         return RedirectResponse(url="/login?error=1", status_code=status.HTTP_303_SEE_OTHER)
     
-    # Re-hashear contraseñas en texto plano que ya existían (migración automática)
     if not user.hashed_password.startswith("$2b$"):
         user.hashed_password = hash_password(password)
         db.commit()
     
-    # Cookie firmada y con tiempo de expiración
     token = signer.dumps(user.id)
     response = RedirectResponse(url="/dashboard", status_code=status.HTTP_303_SEE_OTHER)
     
-    # Hardening de cookies para producción
     is_prod = os.environ.get("RAILWAY_ENVIRONMENT") == "production"
     response.set_cookie(
         key="session_token", 
@@ -405,8 +381,8 @@ def login_post(
         path="/",
         httponly=True,
         samesite="lax",
-        secure=is_prod, # Solo HTTPS en producción
-        max_age=60 * 60 * 12 # Reducido a 12 horas para mayor seguridad financiera
+        secure=is_prod,
+        max_age=60 * 60 * 12
     )
     return response
 
@@ -457,35 +433,26 @@ def logout():
 
 @app.get("/dashboard", response_class=HTMLResponse)
 def dashboard(request: Request, db: Session = Depends(get_db), current_user: User = Depends(require_user)):
-    """
-    Ruta Principal de Dashboard.
-    """
     user = current_user
         
-    # Si ambos capitales están en cero, pedir configurarlo
     if user.capital_total_usd == 0 and user.capital_total_ves == 0:
         return RedirectResponse(url="/settings/capital")
         
     tasa_actual = update_bcv_rate_if_needed(db)
-    
     capital_inicial = user.capital_total_usd
     
-    # Préstamos activos con transacciones ya cargadas (Evita N+1 query problem)
     active_loans = db.query(Loan).options(joinedload(Loan.transactions)).join(Client).filter(Client.user_id == user.id, Loan.estatus == 'activo').all()
     
     prestamos_vencidos = sum(1 for l in active_loans if utils.chequear_cuota_vencida(l))
     total_prestamos_activos = len(active_loans)
     
-    # Capital Prestado (Solo el capital principal que aún no fue recuperado)
     capital_prestado_usd = sum(max(0.0, l.monto_principal - sum(t.monto for t in l.transactions if t.tipo == 'pago_cuota')) for l in active_loans)
 
-    # Ganancias proyectadas = interes sumado de préstamos activos
     ganancias_proyectadas = sum(
         utils.calcular_interes_simple(l.monto_principal, l.porcentaje_interes) * (l.cuotas_totales or 1)
         for l in active_loans
     )
     
-    # Ganancias reales = Interés recolectado (Total pagado - Principal cubierto)
     ganancias_reales = 0.0
     all_user_loans = db.query(Loan).join(Client).filter(Client.user_id == user.id).all()
     for l in all_user_loans:
@@ -493,23 +460,18 @@ def dashboard(request: Request, db: Session = Depends(get_db), current_user: Use
         if pagos_usd > l.monto_principal:
             ganancias_reales += (pagos_usd - l.monto_principal)
     
-    # Notificaciones no leídas
     unread_count = db.query(Notification).filter(Notification.user_id == user.id, Notification.leida == False).count()
 
-    # Los capitales ya están en el modelo User
     disponible_usd = user.capital_total_usd
     disponible_ves = user.capital_total_ves
 
-    # Datos para el gráfico: Últimos 7 meses (Pagos reales)
     meses_labels = []
     meses_valores = []
     meses_nombres = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
     hoy = datetime.utcnow()
-    
     current_month = datetime(hoy.year, hoy.month, 1)
     
     for i in range(6, -1, -1):
-        # Calcular mjes retrospectivo con seguridad para enero/febrero
         target_m = current_month.month - i - 1
         target_y = current_month.year + (target_m // 12)
         target_m = (target_m % 12) + 1
@@ -531,7 +493,6 @@ def dashboard(request: Request, db: Session = Depends(get_db), current_user: Use
         ).scalar() or 0
         meses_valores.append(sum_mes)
         
-    # Normalizar valores para el gráfico % (Max es 100%)
     max_val = max(meses_valores) if meses_valores and max(meses_valores) > 0 else 1
     grafico_data = [{"label": l, "height": int((v / max_val) * 100)} for l, v in zip(meses_labels, meses_valores)]
 
@@ -553,11 +514,11 @@ def dashboard(request: Request, db: Session = Depends(get_db), current_user: Use
 
 @app.get("/history/movements", response_class=HTMLResponse)
 def movements_history_view(request: Request, db: Session = Depends(get_db), current_user: User = Depends(require_user)):
-    # Combinar transacciones de préstamos y transacciones de capital
     loan_trans = db.query(Transaction).join(Loan).join(Client).filter(Client.user_id == current_user.id).all()
     cap_trans = db.query(CapitalTransaction).filter(CapitalTransaction.user_id == current_user.id).all()
     
-    # Formatear para una vista unificada
+    movements = []  # ✅ CORRECCIÓN: lista inicializada
+    
     for t in loan_trans:
         titulo = f"Pago: {t.loan.client.nombre}"
         tipo_mov = "entrada"
@@ -576,10 +537,11 @@ def movements_history_view(request: Request, db: Session = Depends(get_db), curr
             "tipo_ui": tipo_mov,
             "categoria": "Préstamo"
         })
+
     for t in cap_trans:
         movements.append({
             "fecha": t.fecha,
-            "titulo": f"Ajuste de Capital",
+            "titulo": "Ajuste de Capital",
             "monto": t.monto,
             "moneda": t.moneda,
             "tipo_ui": "entrada" if t.tipo in ["inversion", "ajuste_directo"] else "salida",
@@ -596,7 +558,6 @@ def loans_history_view(request: Request, db: Session = Depends(get_db), current_
     tasa_actual = update_bcv_rate_if_needed(db)
     loans = db.query(Loan).options(joinedload(Loan.transactions), joinedload(Loan.client)).join(Client).filter(Client.user_id == current_user.id).order_by(Loan.fecha_creacion.desc()).all()
     
-    # Adaptar para multimoneda indexada
     formatted_loans = []
     for l in loans:
         monto_display = l.monto_principal
@@ -637,18 +598,16 @@ def loans_hub(request: Request, db: Session = Depends(get_db), current_user: Use
     tasa_actual = update_bcv_rate_if_needed(db)
     active_loans = db.query(Loan).options(joinedload(Loan.transactions), joinedload(Loan.client)).join(Client).filter(Client.user_id == current_user.id, Loan.estatus == 'activo').all()
     
-    # Stats
     total_prestado = sum(utils.obtener_deuda_pendiente(l) for l in active_loans)
     vencidos = sum(1 for l in active_loans if utils.chequear_cuota_vencida(l))
     
     loan_list = []
     for l in active_loans:
-        # Para visualización en el Hub, mostramos en VES si el préstamo es VES
         monto_display = l.monto_principal
         deuda_display = utils.obtener_deuda_pendiente(l)
         
         if l.moneda == 'VES':
-            monto_display = l.monto_principal * tasa_actual # Monto base proyectado a hoy
+            monto_display = l.monto_principal * tasa_actual
             deuda_display = deuda_display * tasa_actual
 
         loan_list.append({
@@ -703,12 +662,10 @@ def new_client_post(
     )
     db.add(db_client)
     db.commit()
-    
     return RedirectResponse(url="/clients", status_code=status.HTTP_303_SEE_OTHER)
 
 @app.post("/clients/", response_model=schemas.ClientResponse)
 def clients_post(client: schemas.ClientCreate, db: Session = Depends(get_db), current_user: User = Depends(require_user)):
-    """API para creación rápida de clientes (JSON)."""
     db_client = Client(
         nombre=client.nombre,
         cedula=client.cedula or "",
@@ -730,9 +687,7 @@ def client_detail(request: Request, client_id: int, db: Session = Depends(get_db
     active_loans = []
     for l in client.loans:
         if l.estatus == 'activo':
-            # Calculamos deuda pendiente en USD para mostrar en perfil
             deuda = utils.obtener_deuda_pendiente(l)
-            # Si el préstamo original fue en VES, podemos dejar la deuda en reflejo USD para el perfil unificado
             active_loans.append({
                 "id": l.id,
                 "monto_principal": l.monto_original if l.monto_original else l.monto_principal,
@@ -743,7 +698,6 @@ def client_detail(request: Request, client_id: int, db: Session = Depends(get_db
             })
             
     total_deuda = sum(l['deuda_pendiente'] for l in active_loans)
-            
     unread_count = db.query(Notification).filter(Notification.user_id == current_user.id, Notification.leida == False).count()
     return templates.TemplateResponse("detalle-cliente.html", {
         "request": request,
@@ -751,7 +705,7 @@ def client_detail(request: Request, client_id: int, db: Session = Depends(get_db
         "active_loans": active_loans,
         "total_deuda": total_deuda,
         "unread_count": unread_count,
-        "format_currency": format_currency # Fix reference to local func
+        "format_currency": format_currency
     })
 
 @app.get("/loans/new", response_class=HTMLResponse)
@@ -786,8 +740,6 @@ def new_loan_post(
 
     tasa = update_bcv_rate_if_needed(db)
     
-    # 1. Validar capital y descontar ATÓMICAMENTE
-    # Usamos una sola consulta de actualización con filtro de saldo para evitar race conditions
     if moneda == "USD":
         updated = db.query(User).filter(
             User.id == current_user.id,
@@ -802,7 +754,6 @@ def new_loan_post(
     if not updated:
         return RedirectResponse(url="/loans/new?error=capital_insuficiente", status_code=status.HTTP_303_SEE_OTHER)
 
-    # 2. Preparar fechas
     try:
         start_date = datetime.strptime(fecha_inicio, "%Y-%m-%d").date() if fecha_inicio else datetime.utcnow().date()
         end_date = datetime.strptime(fecha_fin, "%Y-%m-%d").date() if fecha_fin else None
@@ -810,10 +761,8 @@ def new_loan_post(
         start_date = datetime.utcnow().date()
         end_date = None
 
-    # 3. Calcular montos base
     monto_base_db = monto_principal / tasa if moneda == "VES" else monto_principal
 
-    # 4. Crear préstamo
     new_loan = Loan(
         client_id=client_id,
         monto_principal=monto_base_db,
@@ -829,19 +778,17 @@ def new_loan_post(
         estatus='activo'
     )
     db.add(new_loan)
-    db.flush() # Para obtener el ID antes del commit
+    db.flush()
     
-    # 5. Manejar subida de archivos con validación básica
     ALLOWED_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.pdf', '.docx'}
-    MAX_FILE_SIZE = 5 * 1024 * 1024 # 5MB
+    MAX_FILE_SIZE = 5 * 1024 * 1024
 
     for upload_file in archivos:
         if upload_file.filename:
             ext = os.path.splitext(upload_file.filename)[1].lower()
             if ext not in ALLOWED_EXTENSIONS:
-                continue # Opcional: lanzar error
+                continue
             
-            # Validar tamaño (requiere leer o chequear el descriptor)
             unique_filename = f"loan_{new_loan.id}_{int(datetime.now().timestamp())}{ext}"
             file_path = os.path.join(UPLOAD_DIR, unique_filename)
             
@@ -851,7 +798,6 @@ def new_loan_post(
             attachment = LoanAttachment(loan_id=new_loan.id, file_path=f"/static/uploads/{unique_filename}")
             db.add(attachment)
     
-    # 6. Registrar transacciones y finalizar
     monto_usd_egreso = monto_principal if moneda == "USD" else monto_base_db
     egreso_trans = Transaction(
         loan_id=new_loan.id,
@@ -921,17 +867,14 @@ def delete_client(client_id: int, db: Session = Depends(get_db), current_user: U
     if not client:
         raise HTTPException(status_code=404, detail="Cliente no encontrado")
     
-    # Optional: Check if tiene préstamos activos? User said "repara las funciones", let's just let them delete.
     db.delete(client)
     db.commit()
     
     crear_alerta(db, current_user.id, "Cliente Eliminado", f"Se ha borrado el registro del cliente.", "alert")
     return RedirectResponse(url="/clients", status_code=status.HTTP_303_SEE_OTHER)
 
-
 @app.get("/settings/capital", response_class=HTMLResponse)
 def capital_settings_get(request: Request, current_user: User = Depends(require_user)):
-    """Muestra formulario para configurar capital."""
     return templates.TemplateResponse("capital_settings.html", {"request": request, "user": current_user})
 
 @app.post("/settings/capital")
@@ -945,7 +888,6 @@ def capital_settings_post(
 ):
     user = current_user
     if user:
-        # Ajustes relativos (Suma/Resta) - Operaciones ATÓMICAS en el motor SQL
         if ajuste_usd != 0:
             db.query(User).filter(User.id == user.id).update({
                 User.capital_total_usd: User.capital_total_usd + ajuste_usd
@@ -960,7 +902,6 @@ def capital_settings_post(
             ct = CapitalTransaction(user_id=user.id, tipo="inversion" if ajuste_ves > 0 else "retiro", monto=abs(ajuste_ves), moneda="VES")
             db.add(ct)
 
-        # Ajustes directos (si se enviaron valores en los inputs de "Total")
         if capital_usd is not None and ajuste_usd == 0:
             dif_usd = capital_usd - user.capital_total_usd
             if dif_usd != 0:
@@ -975,7 +916,6 @@ def capital_settings_post(
                 db.add(ct)
                 user.capital_total_ves = capital_ves
         
-        # Generar notificación silenciosa (Audit trail)
         if ajuste_usd != 0 or ajuste_ves != 0 or capital_usd is not None or capital_ves is not None:
             crear_alerta(db, user.id, "Capital Actualizado", "Tus ajustes de capital han sido guardados.", "success")
             
@@ -1015,12 +955,10 @@ def cancel_loan(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_user)
 ):
-    """Anula un préstamo activo y devuelve el capital al usuario."""
     loan = db.query(Loan).join(Client).filter(Loan.id == loan_id, Client.user_id == current_user.id).first()
     if not loan or loan.estatus != 'activo':
         raise HTTPException(status_code=404, detail="Préstamo no encontrado o ya no está activo")
     
-    # Devolver el capital pendiente real (Principal original - Pagos realizados a principal)
     pagos_usd = sum(t.monto for t in loan.transactions if t.tipo == 'pago_cuota')
     capital_por_recuperar = max(0.0, loan.monto_principal - pagos_usd)
     
@@ -1032,17 +970,16 @@ def cancel_loan(
     
     loan.estatus = 'anulado'
     
-    # Registrar devolución de capital (Anulación)
     reintegro_trans = Transaction(
         loan_id=loan.id,
-        tipo='ingreso_extra',  # Ahora es legítimo para auditoría de anulaciones
+        tipo='ingreso_extra',
         monto=capital_por_recuperar,
         monto_real=capital_por_recuperar if loan.moneda == "USD" else (capital_por_recuperar * update_bcv_rate_if_needed(db)),
         moneda=loan.moneda
     )
     db.add(reintegro_trans)
-    
     db.commit()
+
     crear_alerta(db, current_user.id, "Préstamo Anulado", f"El préstamo de {loan.client.nombre} fue anulado. Capital devuelto al fondo.", "alert")
     return RedirectResponse(url="/loans", status_code=status.HTTP_303_SEE_OTHER)
 
@@ -1058,7 +995,6 @@ def notifications_read_all(db: Session = Depends(get_db), current_user: User = D
     db.commit()
     return RedirectResponse(url="/notifications", status_code=status.HTTP_303_SEE_OTHER)
 
-# --- Pagos ---
 @app.post("/loans/{loan_id}/pay")
 def register_payment(
     loan_id: int,
@@ -1074,27 +1010,22 @@ def register_payment(
         raise HTTPException(status_code=404, detail="Préstamo no encontrado")
         
     if monto <= 0:
-        # Retornar error amistoso en la UI en vez de 400 seco (prevenir robo de capital por saldo negativo)
         return RedirectResponse(url="/loans", status_code=status.HTTP_303_SEE_OTHER)
     
-    # Nueva Lógica de Indexación (VES -> USD interno)
     tasa = tasa_pago or update_bcv_rate_if_needed(db)
     monto_final_usd = monto
     
     if loan.moneda == "VES":
-        # Todo se reduce en base USD interno
         if moneda_pago == "VES":
             monto_final_usd = monto / tasa
         else:
-            monto_final_usd = monto # Ya viene en USD
+            monto_final_usd = monto
     else:
-        # Préstamo en USD puro
         if moneda_pago == "VES":
             monto_final_usd = monto / tasa
         else:
             monto_final_usd = monto
 
-    # Registrar la transacción
     new_transaction = Transaction(
         loan_id=loan_id, 
         tipo=tipo, 
@@ -1104,7 +1035,6 @@ def register_payment(
     )
     db.add(new_transaction)
     
-    # Aumentar capital del usuario - ATÓMICAMENTE en SQL
     if moneda_pago == "USD":
         db.query(User).filter(User.id == current_user.id).update({
             User.capital_total_usd: User.capital_total_usd + monto
@@ -1117,10 +1047,9 @@ def register_payment(
     db.commit()
     db.refresh(loan)
     
-    # Calculamos la deuda pendiente para alertas, en la moneda del préstamo
     deuda = utils.obtener_deuda_pendiente(loan, en_bolivares=True, tasa_actual=tasa)
     
-    if deuda <= 0.5: # Margen por redondeo en VES/USD
+    if deuda <= 0.5:
         loan.estatus = 'pagado'
         crear_alerta(db, current_user.id, "Préstamo Liquidado", f"El préstamo de {loan.client.nombre} ha sido pagado totalmente.", "success")
     else:
@@ -1129,7 +1058,6 @@ def register_payment(
     db.commit()
     return RedirectResponse(url="/loans", status_code=status.HTTP_303_SEE_OTHER)
 
-# --- APIs de ejemplo para probar desde un cliente ---
 @app.post("/clients/", response_model=schemas.ClientResponse)
 def create_client(
     request: Request,
@@ -1137,7 +1065,6 @@ def create_client(
     db: Session = Depends(get_db), 
     current_user: User = Depends(require_user)
 ):
-    """Registrar un nuevo cliente vía API."""
     csrf_token = request.headers.get("X-CSRF-Token")
     if not csrf_token or not verify_csrf_token(csrf_token):
         raise HTTPException(status_code=403, detail="CSRF Token inválido")
@@ -1150,8 +1077,6 @@ def create_client(
 
 @app.post("/loans/", response_model=schemas.LoanResponse)
 def create_loan(loan: schemas.LoanCreate, db: Session = Depends(get_db), current_user: User = Depends(require_user)):
-    """Crear un préstamo y snapshot de la tasa del día."""
-    # Verificar que el cliente pertenezca al usuario actual
     client = db.query(Client).filter(Client.id == loan.client_id, Client.user_id == current_user.id).first()
     if not client:
         raise HTTPException(status_code=403, detail="No autorizado para este cliente")
@@ -1170,7 +1095,6 @@ def create_loan(loan: schemas.LoanCreate, db: Session = Depends(get_db), current
 
 @app.get("/reports", response_class=HTMLResponse)
 def reports_dashboard(request: Request, db: Session = Depends(get_db), current_user: User = Depends(require_user)):
-    """Dashboard de Reportes y Analíticas."""
     user = current_user
     tasa_actual = update_bcv_rate_if_needed(db)
 
@@ -1197,12 +1121,10 @@ def reports_dashboard(request: Request, db: Session = Depends(get_db), current_u
     disponible_usd = user.capital_total_usd
     disponible_ves = user.capital_total_ves
 
-    # Gráfico mensual (últimos 7 meses)
     meses_labels = []
     meses_valores = []
     meses_nombres = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
     hoy = datetime.utcnow()
-
     current_month = datetime(hoy.year, hoy.month, 1)
 
     for i in range(6, -1, -1):
@@ -1228,7 +1150,6 @@ def reports_dashboard(request: Request, db: Session = Depends(get_db), current_u
     max_val = max(meses_valores) if meses_valores and max(meses_valores) > 0 else 1
     grafico_data = [{"label": l, "height": int((v / max_val) * 100)} for l, v in zip(meses_labels, meses_valores)]
 
-    # Listado de préstamos activos con campo vencido
     loans_activos = []
     for l in active_loans:
         loans_activos.append({
@@ -1242,7 +1163,6 @@ def reports_dashboard(request: Request, db: Session = Depends(get_db), current_u
             "vencido": utils.chequear_cuota_vencida(l),
         })
 
-    # Estadísticas extra
     promedio_prestamo = (capital_prestado_usd / total_activos) if total_activos > 0 else 0
     recaudacion_total = db.query(func.sum(Transaction.monto)).join(Loan).join(Client).filter(
         Client.user_id == user.id,
@@ -1271,5 +1191,3 @@ def reports_dashboard(request: Request, db: Session = Depends(get_db), current_u
         "usd_count": usd_count,
         "ves_count": ves_count
     })
-
-
