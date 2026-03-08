@@ -1,0 +1,15 @@
+fastapi
+uvicorn
+sqlalchemy
+jinja2
+python-multipart
+itsdangerous
+bcrypt
+requests
+beautifulsoup4
+psycopg2-binary
+fpdf2
+webauthn>=2.0.0
+pywebpush>=1.14.0
+cryptography>=42.0.0
+http-ece>=1.1.0
