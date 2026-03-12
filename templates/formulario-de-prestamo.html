@@ -12,9 +12,9 @@
     <title>Melo Finance - Nuevo Préstamo</title>
     <meta name="csrf-token" content="{{ csrf_token }}">
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=block"
         rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=block"
         rel="stylesheet" />
     <script id="tailwind-config">
         tailwind.config = {
@@ -49,11 +49,88 @@
             --bg-light: #f5f6f8;
             --bg-dark: #0f1623;
         }
+
+        /* Skeleton System */
+        .shimmer {
+            background: linear-gradient(
+                90deg,
+                rgba(255, 255, 255, 0) 0%,
+                rgba(255, 255, 255, 0.4) 50%,
+                rgba(255, 255, 255, 0) 100%
+            );
+            background-size: 200% 100%;
+            animation: shimmer-anim 1.5s infinite linear;
+        }
+
+        .dark .shimmer {
+            background: linear-gradient(
+                90deg,
+                rgba(15, 22, 35, 0) 0%,
+                rgba(255, 255, 255, 0.05) 50%,
+                rgba(15, 22, 35, 0) 100%
+            );
+            background-size: 200% 100%;
+        }
+
+        @keyframes shimmer-anim {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        .skeleton-item {
+            background: #eef1f5;
+            border-radius: 1rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .dark .skeleton-item {
+            background: #1e293b;
+        }
+
+        #preloader {
+            position: fixed;
+            inset: 0;
+            z-index: 99999;
+            background: #ffffff;
+            display: flex;
+            flex-direction: column;
+            transition: opacity 0.5s ease-in-out, visibility 0.5s;
+        }
+
+        .dark #preloader {
+            background: #0f1623;
+        }
+
+        #preloader.loaded {
+            opacity: 0;
+            visibility: hidden;
+        }
     </style>
     <script src="/static/darkMode.js"></script>
 </head>
 
 <body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen">
+    <!-- Preloader & Skeleton -->
+    <div id="preloader">
+        <div class="w-full max-w-5xl mx-auto h-full overflow-hidden">
+            <div class="flex items-center justify-between p-4 border-b border-slate-100 dark:border-slate-800">
+                <div class="skeleton-item shimmer size-10 rounded-full"></div>
+                <div class="skeleton-item shimmer h-8 w-40"></div>
+                <div class="skeleton-item shimmer size-10 rounded-full"></div>
+            </div>
+            <div class="flex flex-col lg:flex-row gap-8 p-4 md:p-8">
+                <div class="flex-1 space-y-6">
+                    <div class="skeleton-item shimmer h-12 w-full rounded-xl"></div>
+                    <div class="skeleton-item shimmer h-24 w-full rounded-2xl"></div>
+                    <div class="skeleton-item shimmer h-24 w-full rounded-2xl"></div>
+                    <div class="skeleton-item shimmer h-48 w-full rounded-2xl"></div>
+                </div>
+                <div class="hidden lg:block w-[400px] h-96 skeleton-item shimmer rounded-[2rem]"></div>
+            </div>
+        </div>
+    </div>
+
     <!-- Sidebar Overlay -->
     <div id="sidebar-overlay" onclick="toggleSidebar()"
         class="fixed inset-0 bg-black/50 z-[90] hidden backdrop-blur-sm transition-opacity"></div>
