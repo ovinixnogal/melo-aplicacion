@@ -1,5 +1,4 @@
-from database import Loan, Transaction
-from datetime import datetime
+from database import Loan, Transaction, get_now_vet
 
 def calcular_interes_simple(monto: float, porcentaje: float) -> float:
     return monto * (porcentaje / 100.0)
@@ -19,7 +18,7 @@ def chequear_cuota_vencida(loan: Loan) -> bool:
     }
     dias_por_periodo = frecuencia_a_dias.get(loan.frecuencia_pagos or "mensual", 30)
     
-    dias_transcurridos = (datetime.utcnow() - loan.fecha_creacion).days
+    dias_transcurridos = (get_now_vet() - loan.fecha_creacion).days
     periodos_transcurridos = dias_transcurridos // dias_por_periodo
     
     if periodos_transcurridos == 0:
@@ -39,7 +38,7 @@ def chequear_cuota_vencida(loan: Loan) -> bool:
     # Si los pagos cubren la deuda exigible (tolerancia de 1$), no está vencido
     if pagos_realizados >= (deuda_exigible - 1.0):
         # Hay un caso especial: si el préstamo venció por completo en base a fecha
-        if loan.fecha_vencimiento and datetime.utcnow().date() > loan.fecha_vencimiento:
+        if loan.fecha_vencimiento and get_now_vet().date() > loan.fecha_vencimiento:
             if pagos_realizados < (deuda_total_usd - 1.0):
                 return True
         return False

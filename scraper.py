@@ -47,7 +47,6 @@ def get_rate_from_bcv_scrape() -> float:
         response = requests.get("https://www.bcv.org.ve/", headers=headers, verify=False, timeout=8)
         response.raise_for_status()
 
-        from bs4 import BeautifulSoup
         soup = BeautifulSoup(response.content, 'html.parser')
         dolar_div = soup.find('div', id='dolar')
         if dolar_div:
@@ -79,20 +78,20 @@ def update_bcv_rate_if_needed(db: Session = None) -> float:
     if _rate_cache["date"] == today and _rate_cache["value"]:
         return _rate_cache["value"]
 
-    # Creamos una sesión local en lugar de usar la del request para evitar `database is locked`
-    # o comitear prematuramente cambios pendientes del request principal.
-    local_db = SessionLocal()
+    owns_session = False
+    if db is None:
+        db = SessionLocal()
+        owns_session = True
 
     try:
         # 2. Base de Datos (ya fue guardada hoy)
-        existing_rate = local_db.query(Rate).filter(Rate.fecha == today).first()
+        existing_rate = db.query(Rate).filter(Rate.fecha == today).first()
         if existing_rate and existing_rate.valor_bs_bcv > 0:
             _rate_cache["date"] = today
             _rate_cache["value"] = existing_rate.valor_bs_bcv
             return _rate_cache["value"]
 
         # 3 & 4. Obtener tasa fresca (DolarAPI primero, BCV como respaldo)
-        # Bajar el timeout para evitar colgar la página.
         rate_value = get_rate_from_dolarapi() or get_rate_from_bcv_scrape()
 
         if rate_value and rate_value > 0:
@@ -100,14 +99,14 @@ def update_bcv_rate_if_needed(db: Session = None) -> float:
             if existing_rate:
                 existing_rate.valor_bs_bcv = rate_value
             else:
-                local_db.add(Rate(fecha=today, valor_bs_bcv=rate_value))
-            local_db.commit()
+                db.add(Rate(fecha=today, valor_bs_bcv=rate_value))
+            db.commit()
             _rate_cache["date"] = today
             _rate_cache["value"] = rate_value
             return rate_value
 
         # 5. Última tasa conocida de la DB
-        last_rate = local_db.query(Rate).order_by(Rate.fecha.desc()).first()
+        last_rate = db.query(Rate).order_by(Rate.fecha.desc()).first()
         if last_rate and last_rate.valor_bs_bcv > 0:
             print(f"RATE: Usando última tasa conocida: {last_rate.valor_bs_bcv}")
             _rate_cache["date"] = today
@@ -122,4 +121,5 @@ def update_bcv_rate_if_needed(db: Session = None) -> float:
         print(f"RATE: Error crítico en update_bcv_rate_if_needed: {e}")
         return 0.0
     finally:
-        local_db.close()
+        if owns_session:
+            db.close()

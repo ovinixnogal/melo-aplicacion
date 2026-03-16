@@ -2,6 +2,11 @@ import os
 from sqlalchemy import create_engine, Column, Integer, String, Float, ForeignKey, DateTime, Date, Boolean
 from sqlalchemy.orm import declarative_base, sessionmaker, relationship
 from datetime import datetime
+import zoneinfo
+
+def get_now_vet():
+    # Retorna la hora local en Venezuela (VET) sin información de zona (naive)
+    return datetime.now(zoneinfo.ZoneInfo("America/Caracas")).replace(tzinfo=None)
 
 # URL de la base de datos (Usa variable de entorno para la nube o SQLite local por defecto)
 DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite:///./loans.db")
@@ -30,7 +35,7 @@ class User(Base):
     hashed_password = Column(String)
     capital_total_usd = Column(Float, default=0.0)
     capital_total_ves = Column(Float, default=0.0)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=get_now_vet)
     last_login = Column(DateTime, nullable=True)
     webauthn_id = Column(String, unique=True, nullable=True) # Unico para cada usuario
     
@@ -45,8 +50,8 @@ class Client(Base):
     telefono = Column(String)
     cedula = Column(String, nullable=True)
     direccion = Column(String)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=get_now_vet)
+    updated_at = Column(DateTime, default=get_now_vet, onupdate=get_now_vet)
     
     user = relationship("User", backref="clients")
     loans = relationship("Loan", back_populates="client")
@@ -56,7 +61,7 @@ class Rate(Base):
     id = Column(Integer, primary_key=True, index=True)
     fecha = Column(Date, unique=True, index=True)
     valor_bs_bcv = Column(Float)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_at = Column(DateTime, default=get_now_vet, onupdate=get_now_vet)
 
 class Loan(Base):
     __tablename__ = "loans"
@@ -69,12 +74,12 @@ class Loan(Base):
     porcentaje_interes = Column(Float)
     frecuencia_pagos = Column(String, default="mensual") 
     cuotas_totales = Column(Integer, default=1)
-    fecha_inicio = Column(Date, default=datetime.utcnow().date)
+    fecha_inicio = Column(Date, default=lambda: get_now_vet().date())
     fecha_vencimiento = Column(Date, nullable=True)
     estatus = Column(String, default="activo") 
     notas = Column(String, nullable=True)
-    fecha_creacion = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    fecha_creacion = Column(DateTime, default=get_now_vet)
+    updated_at = Column(DateTime, default=get_now_vet, onupdate=get_now_vet)
     
     client = relationship("Client", back_populates="loans")
     transactions = relationship("Transaction", back_populates="loan")
@@ -85,7 +90,7 @@ class LoanAttachment(Base):
     id = Column(Integer, primary_key=True, index=True)
     loan_id = Column(Integer, ForeignKey("loans.id"))
     file_path = Column(String)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=get_now_vet)
     
     loan = relationship("Loan", back_populates="attachments")
 
@@ -97,7 +102,7 @@ class Transaction(Base):
     monto = Column(Float) 
     monto_real = Column(Float, nullable=True) 
     moneda = Column(String, default="USD") 
-    fecha = Column(DateTime, default=datetime.utcnow)
+    fecha = Column(DateTime, default=get_now_vet)
     
     loan = relationship("Loan", back_populates="transactions")
 
@@ -108,7 +113,7 @@ class CapitalTransaction(Base):
     tipo = Column(String) 
     monto = Column(Float)
     moneda = Column(String, default="USD") 
-    fecha = Column(DateTime, default=datetime.utcnow)
+    fecha = Column(DateTime, default=get_now_vet)
     
     user = relationship("User", backref="capital_transactions")
 
@@ -118,7 +123,7 @@ class Notification(Base):
     user_id = Column(Integer, ForeignKey("users.id"))
     titulo = Column(String)
     mensaje = Column(String)
-    fecha = Column(DateTime, default=datetime.utcnow)
+    fecha = Column(DateTime, default=get_now_vet)
     tipo = Column(String, default="info") 
     leida = Column(Boolean, default=False)
     
@@ -143,7 +148,7 @@ class PushSubscription(Base):
     auth_key = Column(String)
     p256dh_key = Column(String)
     browser = Column(String, nullable=True) # Para saber si es iPhone, Chrome, etc
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=get_now_vet)
     
     user = relationship("User", back_populates="push_subscriptions")
 

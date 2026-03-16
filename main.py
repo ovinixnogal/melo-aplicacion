@@ -37,6 +37,31 @@ from webauthn.helpers.structs import (
     PublicKeyCredentialDescriptor,
 )
 from pywebpush import webpush, WebPushException
+import boto3
+from botocore.exceptions import NoCredentialsError
+
+# --- S3 / Supabase Storage Configuración ---
+AWS_ACCESS_KEY_ID = os.environ.get("AWS_ACCESS_KEY_ID")
+AWS_SECRET_ACCESS_KEY = os.environ.get("AWS_SECRET_ACCESS_KEY")
+AWS_REGION = os.environ.get("AWS_REGION", "us-east-1")
+AWS_STORAGE_BUCKET_NAME = os.environ.get("AWS_STORAGE_BUCKET_NAME")
+AWS_S3_ENDPOINT_URL = os.environ.get("AWS_S3_ENDPOINT_URL")
+
+s3_client = None
+if AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY and AWS_STORAGE_BUCKET_NAME:
+    print("STORAGE: Conectando a bucket remoto S3/Supabase...")
+    try:
+        s3_client = boto3.client(
+            's3',
+            aws_access_key_id=AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
+            region_name=AWS_REGION,
+            endpoint_url=AWS_S3_ENDPOINT_URL
+        )
+    except Exception as e:
+        print(f"STORAGE ERROR: Falló vinculación a S3 ({e}). Fallback local.")
+else:
+    print("STORAGE WARNING: Credenciales S3 faltantes. Guardando en almacenamiento local efímero.")
 
 # --- Seguridad ---
 _SECRET_KEY_FALLBACK = "melo-finance-secret-key-change-in-production"
@@ -62,25 +87,55 @@ if not VAPID_PRIVATE_KEY or not VAPID_PUBLIC_KEY:
 
 
 # --- CSRF & Security Helpers ---
-def generate_csrf_token():
-    return signer.dumps(os.urandom(16).hex())
+def generate_csrf_token(request: Request):
+    token_payload = "guest"
+    session = request.cookies.get("session_token")
+    if session:
+        try:
+            token_payload = str(signer.loads(session, max_age=60 * 60 * 24 * 30))
+        except:
+            pass
+    return signer.dumps({"rnd": os.urandom(16).hex(), "id": token_payload})
 
-def verify_csrf_token(token: str) -> bool:
+def verify_csrf_token(token: str, request: Request) -> bool:
     try:
-        signer.loads(token, max_age=3600)
-        return True
+        data = signer.loads(token, max_age=3600)
+        expected_id = "guest"
+        session = request.cookies.get("session_token")
+        if session:
+            try:
+                expected_id = str(signer.loads(session, max_age=60 * 60 * 24 * 30))
+            except:
+                pass
+        return str(data.get("id")) == expected_id
     except:
         return False
 
 # Rate Limiter Simple (En memoria para la Beta)
-from collections import defaultdict
 import time
-_login_attempts = defaultdict(list)
+from typing import Dict, List, Any
 
-def check_rate_limit(ip: str):
+_login_attempts: Dict[str, List[float]] = {}
+
+def check_rate_limit(ip: str) -> bool:
     now = time.time()
-    _login_attempts[ip] = [t for t in _login_attempts[ip] if now - t < 60]
-    if len(_login_attempts[ip]) >= 5:
+    
+    # Limpiar IPs viejas si el diccionario crece demasiado para evitar fuga de memoria
+    if len(_login_attempts) > 1000:
+        keys_to_delete = []
+        for k, v in _login_attempts.items():
+            if not [t for t in v if now - t < 60]:
+                keys_to_delete.append(k)
+        for k in keys_to_delete:
+            del _login_attempts[k]
+        if len(_login_attempts) > 2000:
+            _login_attempts.clear()
+
+    attempts = _login_attempts.get(ip, [])
+    attempts = [t for t in attempts if now - t < 60]
+    _login_attempts[ip] = attempts
+    
+    if len(attempts) >= 5:
         return False
     _login_attempts[ip].append(now)
     return True
@@ -108,20 +163,24 @@ except Exception as e:
 
 app = FastAPI(title="Melo Préstamos - Bimoneda", description="App de gestión de préstamos USD/VES", version="1.0.0")
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+STATIC_DIR = os.path.join(BASE_DIR, "static")
+UPLOAD_DIR = os.path.join(STATIC_DIR, "uploads")
+TEMPLATES_DIR = os.path.join(BASE_DIR, "templates")
+
 # Montar static para CSS y JS
-if not os.path.exists("./static"):
-    os.makedirs("./static")
-app.mount("/static", StaticFiles(directory="static"), name="static")
+if not os.path.exists(STATIC_DIR):
+    os.makedirs(STATIC_DIR)
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 # Directorio de subidas (archivos de préstamos)
-UPLOAD_DIR = os.path.join("static", "uploads")
 if not os.path.exists(UPLOAD_DIR):
     os.makedirs(UPLOAD_DIR)
 
 # Templates
-if not os.path.exists("./templates"):
-    os.makedirs("./templates")
-templates = Jinja2Templates(directory="templates")
+if not os.path.exists(TEMPLATES_DIR):
+    os.makedirs(TEMPLATES_DIR)
+templates = Jinja2Templates(directory=TEMPLATES_DIR)
 
 def format_currency(value):
     try:
@@ -312,8 +371,8 @@ def push_test(db: Session = Depends(get_db), current_user: User = Depends(requir
     if not VAPID_PRIVATE_KEY or not VAPID_PUBLIC_KEY:
         return {"status": "error", "message": "VAPID Keys no configuradas en el servidor."}
 
-    sent_count = 0
-    expired_count = 0
+    sent_count: int = 0
+    expired_count: int = 0
     for sub in current_user.push_subscriptions:
         try:
             webpush(
@@ -346,7 +405,7 @@ def index():
 
 @app.get("/login", response_class=HTMLResponse)
 def login_get(request: Request):
-    csrf_token = generate_csrf_token()
+    csrf_token = generate_csrf_token(request)
     return templates.TemplateResponse("login.html", {"request": request, "csrf_token": csrf_token})
 
 @app.post("/login")
@@ -357,7 +416,7 @@ def login_post(
     csrf_token: str = Form(""),
     db: Session = Depends(get_db)
 ):
-    if not verify_csrf_token(csrf_token):
+    if not verify_csrf_token(csrf_token, request):
         raise HTTPException(status_code=403, detail="CSRF Token inválido")
     
     if not check_rate_limit(request.client.host):
@@ -388,11 +447,12 @@ def login_post(
 
 @app.get("/signup", response_class=HTMLResponse)
 def signup_get(request: Request):
-    csrf_token = generate_csrf_token()
+    csrf_token = generate_csrf_token(request)
     return templates.TemplateResponse("sign-up.html", {"request": request, "csrf_token": csrf_token})
 
 @app.post("/signup")
 def signup_post(
+    request: Request,
     nombre: str = Form(""), 
     apellido: str = Form(""), 
     email: str = Form(""), 
@@ -400,7 +460,7 @@ def signup_post(
     csrf_token: str = Form(""),
     db: Session = Depends(get_db)
 ):
-    if not verify_csrf_token(csrf_token):
+    if not verify_csrf_token(csrf_token, request):
         raise HTTPException(status_code=403, detail="CSRF Token inválido")
     existing = db.query(User).filter(User.username == email).first()
     if existing:
@@ -443,17 +503,17 @@ def dashboard(request: Request, db: Session = Depends(get_db), current_user: Use
     
     active_loans = db.query(Loan).options(joinedload(Loan.transactions)).join(Client).filter(Client.user_id == user.id, Loan.estatus == 'activo').all()
     
-    prestamos_vencidos = sum(1 for l in active_loans if utils.chequear_cuota_vencida(l))
-    total_prestamos_activos = len(active_loans)
+    prestamos_vencidos: int = sum(1 for l in active_loans if utils.chequear_cuota_vencida(l))
+    total_prestamos_activos: int = len(active_loans)
     
-    capital_prestado_usd = sum(max(0.0, l.monto_principal - sum(t.monto for t in l.transactions if t.tipo == 'pago_cuota')) for l in active_loans)
+    capital_prestado_usd: float = sum(max(0.0, l.monto_principal - sum(t.monto for t in l.transactions if t.tipo == 'pago_cuota')) for l in active_loans)
 
-    ganancias_proyectadas = sum(
+    ganancias_proyectadas: float = sum(
         utils.calcular_interes_simple(l.monto_principal, l.porcentaje_interes) * (l.cuotas_totales or 1)
         for l in active_loans
     )
     
-    ganancias_reales = 0.0
+    ganancias_reales: float = 0.0
     all_user_loans = db.query(Loan).join(Client).filter(Client.user_id == user.id).all()
     for l in all_user_loans:
         pagos_usd = sum(t.monto for t in l.transactions if t.tipo == 'pago_cuota')
@@ -485,15 +545,15 @@ def dashboard(request: Request, db: Session = Depends(get_db), current_user: Use
         else:
             end = datetime(target_y, target_m + 1, 1)
             
-        sum_mes = db.query(func.sum(Transaction.monto)).join(Loan).join(Client).filter(
+        sum_mes: float = db.query(func.sum(Transaction.monto)).join(Loan).join(Client).filter(
             Client.user_id == user.id,
             Transaction.tipo == 'pago_cuota',
             Transaction.fecha >= start,
             Transaction.fecha < end
-        ).scalar() or 0
+        ).scalar() or 0.0
         meses_valores.append(sum_mes)
         
-    max_val = max(meses_valores) if meses_valores and max(meses_valores) > 0 else 1
+    max_val: float = max(meses_valores) if meses_valores and max(meses_valores) > 0 else 1.0
     grafico_data = [{"label": l, "height": int((v / max_val) * 100)} for l, v in zip(meses_labels, meses_valores)]
 
     return templates.TemplateResponse("dashboard.html", {
@@ -638,11 +698,12 @@ def settings_view(request: Request, db: Session = Depends(get_db), current_user:
 @app.get("/clients/new", response_class=HTMLResponse)
 def new_client_get(request: Request, db: Session = Depends(get_db), current_user: User = Depends(require_user)):
     unread_count = db.query(Notification).filter(Notification.user_id == current_user.id, Notification.leida == False).count()
-    csrf_token = generate_csrf_token()
+    csrf_token = generate_csrf_token(request)
     return templates.TemplateResponse("nuevo-cliente.html", {"request": request, "unread_count": unread_count, "csrf_token": csrf_token})
 
 @app.post("/clients/new")
 def new_client_post(
+    request: Request,
     nombre: str = Form(...),
     cedula: str = Form(None),
     telefono: str = Form(None),
@@ -651,7 +712,7 @@ def new_client_post(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_user)
 ):
-    if not verify_csrf_token(csrf_token):
+    if not verify_csrf_token(csrf_token, request):
         raise HTTPException(status_code=403, detail="CSRF Token inválido")
     db_client = Client(
         nombre=nombre, 
@@ -713,11 +774,12 @@ def new_loan_get(request: Request, db: Session = Depends(get_db), current_user: 
     tasa_actual = update_bcv_rate_if_needed(db)
     clients = db.query(Client).filter(Client.user_id == current_user.id).all()
     unread_count = db.query(Notification).filter(Notification.user_id == current_user.id, Notification.leida == False).count()
-    csrf_token = generate_csrf_token()
+    csrf_token = generate_csrf_token(request)
     return templates.TemplateResponse("formulario-de-prestamo.html", {"request": request, "tasa_actual": tasa_actual, "clients": clients, "unread_count": unread_count, "user": current_user, "csrf_token": csrf_token})
 
 @app.post("/loans/new")
 def new_loan_post(
+    request: Request,
     client_id: int = Form(...),
     monto_principal: float = Form(...),
     moneda: str = Form(...),
@@ -732,7 +794,7 @@ def new_loan_post(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_user)
 ):
-    if not verify_csrf_token(csrf_token):
+    if not verify_csrf_token(csrf_token, request):
         raise HTTPException(status_code=403, detail="CSRF Token inválido")
     client = db.query(Client).filter(Client.id == client_id, Client.user_id == current_user.id).first()
     if not client:
@@ -790,12 +852,40 @@ def new_loan_post(
                 continue
             
             unique_filename = f"loan_{new_loan.id}_{int(datetime.now().timestamp())}{ext}"
-            file_path = os.path.join(UPLOAD_DIR, unique_filename)
             
-            with open(file_path, "wb") as buffer:
-                shutil.copyfileobj(upload_file.file, buffer)
+            file_url = ""
+            if s3_client:
+                # Subir a S3
+                try:
+                    s3_client.upload_fileobj(
+                        upload_file.file,
+                        AWS_STORAGE_BUCKET_NAME,
+                        f"uploads/{unique_filename}",
+                        ExtraArgs={"ContentType": upload_file.content_type}
+                    )
+                    
+                    if AWS_S3_ENDPOINT_URL:
+                        # Si es Supabase o similar custom endpoint (ajuste manual de dominio público)
+                        # Nota: Esto asume un bucket público para visualización simple en esta BD
+                        file_url = f"{AWS_S3_ENDPOINT_URL}/{AWS_STORAGE_BUCKET_NAME}/uploads/{unique_filename}"
+                    else:
+                        file_url = f"https://{AWS_STORAGE_BUCKET_NAME}.s3.{AWS_REGION}.amazonaws.com/uploads/{unique_filename}"
+                except Exception as e:
+                    print(f"S3 UPLOAD ERROR: {e}")
+                    # Fallback a local si Cloud falla
+                    file_path = os.path.join(UPLOAD_DIR, unique_filename)
+                    with open(file_path, "wb") as buffer:
+                        upload_file.file.seek(0)
+                        shutil.copyfileobj(upload_file.file, buffer)
+                    file_url = f"/static/uploads/{unique_filename}"
+            else:
+                # Subida local clásica
+                file_path = os.path.join(UPLOAD_DIR, unique_filename)
+                with open(file_path, "wb") as buffer:
+                    shutil.copyfileobj(upload_file.file, buffer)
+                file_url = f"/static/uploads/{unique_filename}"
             
-            attachment = LoanAttachment(loan_id=new_loan.id, file_path=f"/static/uploads/{unique_filename}")
+            attachment = LoanAttachment(loan_id=new_loan.id, file_path=file_url)
             db.add(attachment)
     
     monto_usd_egreso = monto_principal if moneda == "USD" else monto_base_db
@@ -1066,7 +1156,7 @@ def create_client(
     current_user: User = Depends(require_user)
 ):
     csrf_token = request.headers.get("X-CSRF-Token")
-    if not csrf_token or not verify_csrf_token(csrf_token):
+    if not csrf_token or not verify_csrf_token(csrf_token, request):
         raise HTTPException(status_code=403, detail="CSRF Token inválido")
         
     db_client = Client(**client.model_dump(), user_id=current_user.id)
@@ -1100,16 +1190,16 @@ def reports_dashboard(request: Request, db: Session = Depends(get_db), current_u
 
     active_loans = db.query(Loan).options(joinedload(Loan.transactions), joinedload(Loan.client)).join(Client).filter(Client.user_id == current_user.id, Loan.estatus == 'activo').all()
 
-    prestamos_vencidos = sum(1 for l in active_loans if utils.chequear_cuota_vencida(l))
-    total_activos = len(active_loans)
-    capital_prestado_usd = sum(max(0.0, l.monto_principal - sum(t.monto for t in l.transactions if t.tipo == 'pago_cuota')) for l in active_loans)
+    prestamos_vencidos: int = sum(1 for l in active_loans if utils.chequear_cuota_vencida(l))
+    total_activos: int = len(active_loans)
+    capital_prestado_usd: float = sum(max(0.0, l.monto_principal - sum(t.monto for t in l.transactions if t.tipo == 'pago_cuota')) for l in active_loans)
 
-    ganancias_proyectadas = sum(
+    ganancias_proyectadas: float = sum(
         utils.calcular_interes_simple(l.monto_principal, l.porcentaje_interes) * (l.cuotas_totales or 1)
         for l in active_loans
     )
 
-    ganancias_reales = 0.0
+    ganancias_reales: float = 0.0
     all_user_loans = db.query(Loan).join(Client).filter(Client.user_id == user.id).all()
     for l in all_user_loans:
         pagos_usd = sum(t.monto for t in l.transactions if t.tipo == 'pago_cuota')
@@ -1139,15 +1229,15 @@ def reports_dashboard(request: Request, db: Session = Depends(get_db), current_u
             end = datetime(target_y + 1, 1, 1)
         else:
             end = datetime(target_y, target_m + 1, 1)
-        sum_mes = db.query(func.sum(Transaction.monto)).join(Loan).join(Client).filter(
+        sum_mes: float = db.query(func.sum(Transaction.monto)).join(Loan).join(Client).filter(
             Client.user_id == user.id,
             Transaction.tipo == 'pago_cuota',
             Transaction.fecha >= start,
             Transaction.fecha < end
-        ).scalar() or 0
+        ).scalar() or 0.0
         meses_valores.append(sum_mes)
 
-    max_val = max(meses_valores) if meses_valores and max(meses_valores) > 0 else 1
+    max_val: float = max(meses_valores) if meses_valores and max(meses_valores) > 0 else 1.0
     grafico_data = [{"label": l, "height": int((v / max_val) * 100)} for l, v in zip(meses_labels, meses_valores)]
 
     loans_activos = []
@@ -1163,14 +1253,14 @@ def reports_dashboard(request: Request, db: Session = Depends(get_db), current_u
             "vencido": utils.chequear_cuota_vencida(l),
         })
 
-    promedio_prestamo = (capital_prestado_usd / total_activos) if total_activos > 0 else 0
-    recaudacion_total = db.query(func.sum(Transaction.monto)).join(Loan).join(Client).filter(
+    promedio_prestamo: float = (capital_prestado_usd / float(total_activos)) if total_activos > 0 else 0.0
+    recaudacion_total: float = db.query(func.sum(Transaction.monto)).join(Loan).join(Client).filter(
         Client.user_id == user.id,
         Transaction.tipo == 'pago_cuota'
-    ).scalar() or 0
+    ).scalar() or 0.0
     
-    usd_count = sum(1 for l in active_loans if l.moneda == 'USD')
-    ves_count = sum(1 for l in active_loans if l.moneda == 'VES')
+    usd_count: int = sum(1 for l in active_loans if l.moneda == 'USD')
+    ves_count: int = sum(1 for l in active_loans if l.moneda == 'VES')
 
     return templates.TemplateResponse("reportes-dashboard.html", {
         "request": request,
