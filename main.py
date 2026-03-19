@@ -1279,6 +1279,12 @@ def register_payment(
         return RedirectResponse(url="/loans", status_code=status.HTTP_303_SEE_OTHER)
     
     tasa = tasa_pago or update_bcv_rate_if_needed(db)
+    
+    # Validar que no se pague más de la cuenta
+    deuda_pendiente = utils.obtener_deuda_pendiente(loan, en_bolivares=(moneda_pago == "VES"), tasa_actual=tasa)
+    if monto > (deuda_pendiente + 0.1): # Margen para errores de redondeo de centavos
+        return RedirectResponse(url=f"/loans?error=pago_excesivo&max={deuda_pendiente}", status_code=status.HTTP_303_SEE_OTHER)
+    
     monto_final_usd = monto
     
     if loan.moneda == "VES":

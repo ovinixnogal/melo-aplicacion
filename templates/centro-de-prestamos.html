@@ -429,12 +429,14 @@
                             class="size-16 rounded-3xl bg-primary/10 text-primary flex items-center justify-center mb-4">
                             <span class="material-symbols-outlined text-4xl">payments</span>
                         </div>
-                        <h3 class="text-xl font-black text-slate-900 dark:text-white" id="modalClientName">Registrar
-                            Cobro</h3>
-                        <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Abono a préstamo</p>
+                        <h3 class="text-xl font-black text-slate-900 dark:text-white" id="modalClientName">Registrar Cobro</h3>
+                        <div class="mt-2 px-4 py-2 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 text-center">
+                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-0.5">Saldo Pendiente</p>
+                            <p class="text-lg font-black text-primary" id="modalLoanStatus">--</p>
+                        </div>
                     </div>
 
-                    <form id="paymentForm" method="POST" action="" class="space-y-6">
+                    <form id="paymentForm" method="POST" action="" class="space-y-6" onsubmit="return validatePayment()">
                         <!-- Currency Selector -->
                         <div class="flex p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl">
                             <label class="flex-1 relative cursor-pointer">
@@ -463,6 +465,7 @@
                                     inputmode="decimal"
                                     class="w-full h-14 pl-10 pr-4 rounded-2xl bg-slate-50 dark:bg-slate-800 border-none focus:ring-2 focus:ring-primary font-black text-xl text-slate-900 dark:text-white">
                             </div>
+                            <p id="overpaymentError" class="text-[10px] text-red-500 font-bold hidden px-2">El monto no puede superar la deuda pendiente.</p>
                         </div>
 
                         <input type="hidden" name="tasa_pago" value="{{ tasa_actual }}">
@@ -494,9 +497,12 @@
                 currentLoan = { id, name, moneda, deuda: parseFloat(deuda) };
                 document.getElementById('modalClientName').innerText = name;
                 document.getElementById('paymentForm').action = `/loans/${id}/pay`;
-
-                // Set default amount to pending debt (converted if necessary)
-                document.getElementById('modalAmountInput').value = deuda;
+                document.getElementById('modalAmountInput').value = parseFloat(deuda).toFixed(2);
+                document.getElementById('overpaymentError').classList.add('hidden');
+                
+                // Show formatted debt in modal
+                const symbol = moneda === 'USD' ? '$' : 'Bs.';
+                document.getElementById('modalLoanStatus').innerText = `${symbol} ${parseFloat(deuda).toLocaleString('es-VE', {minimumFractionDigits: 2})}`;
 
                 document.getElementById('paymentModal').classList.remove('hidden');
             }
@@ -513,13 +519,36 @@
                 symbol.innerText = currency === 'USD' ? '$' : 'Bs.';
 
                 // Recalculate suggested amount
-                if (currency === currentLoan.moneda) {
-                    input.value = currentLoan.deuda.toFixed(2);
-                } else if (currency === 'VES' && currentLoan.moneda === 'USD') {
-                    input.value = (currentLoan.deuda * tasa_bcv).toFixed(2);
-                } else if (currency === 'USD' && currentLoan.moneda === 'VES') {
-                    input.value = (currentLoan.deuda / tasa_bcv).toFixed(2);
+                let debtInSelectedCurrency = currentLoan.deuda;
+                if (currency !== currentLoan.moneda) {
+                    if (currency === 'VES' && currentLoan.moneda === 'USD') {
+                        debtInSelectedCurrency = currentLoan.deuda * tasa_bcv;
+                    } else if (currency === 'USD' && currentLoan.moneda === 'VES') {
+                        debtInSelectedCurrency = currentLoan.deuda / tasa_bcv;
+                    }
                 }
+                input.value = debtInSelectedCurrency.toFixed(2);
+                document.getElementById('overpaymentError').classList.add('hidden');
+            }
+
+            function validatePayment() {
+                const amount = parseFloat(document.getElementById('modalAmountInput').value);
+                const currency = document.querySelector('input[name="moneda_pago"]:checked').value;
+                
+                let debtInSelectedCurrency = currentLoan.deuda;
+                if (currency !== currentLoan.moneda) {
+                    if (currency === 'VES' && currentLoan.moneda === 'USD') {
+                        debtInSelectedCurrency = currentLoan.deuda * tasa_bcv;
+                    } else if (currency === 'USD' && currentLoan.moneda === 'VES') {
+                        debtInSelectedCurrency = currentLoan.deuda / tasa_bcv;
+                    }
+                }
+
+                if (amount > debtInSelectedCurrency + 0.01) { // Adding small epsilon
+                    document.getElementById('overpaymentError').classList.remove('hidden');
+                    return false;
+                }
+                return true;
             }
             let currentLoanFilter = 'all';
 

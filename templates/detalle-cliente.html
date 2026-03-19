@@ -325,36 +325,38 @@
                     </div>
 
                     <!-- Payment Form -->
-                    <form action="/loans/{{ loan.id }}/pay" method="POST" class="mt-6 space-y-4">
-                        <div
-                            class="flex p-1 bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-700">
-                            <label class="flex-1 cursor-pointer">
-                                <input checked type="radio" name="moneda_pago" value="USD" class="peer sr-only">
-                                <div
-                                    class="py-2 text-center text-xs font-bold rounded-lg text-slate-500 peer-checked:bg-primary/10 peer-checked:text-primary transition-all underline-offset-4 peer-checked:underline">
-                                    USD</div>
-                            </label>
-                            <label class="flex-1 cursor-pointer">
-                                <input type="radio" name="moneda_pago" value="VES" class="peer sr-only">
-                                <div
-                                    class="py-2 text-center text-xs font-bold rounded-lg text-slate-500 peer-checked:bg-primary/10 peer-checked:text-primary transition-all underline-offset-4 peer-checked:underline">
-                                    VES</div>
-                            </label>
+                    <div class="mt-6 p-4 bg-primary/5 dark:bg-primary/10 rounded-2xl border border-primary/10">
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Abono para {{ client.nombre }}</span>
+                            <span class="text-[10px] font-black text-primary uppercase">Saldo: {% if loan.moneda == 'USD' %}${% else %}Bs.{% endif %}{{ loan.deuda_pendiente|format_currency }}</span>
                         </div>
-                        <div class="flex flex-col md:flex-row gap-3">
-                            <div class="relative flex-1">
-                                <span class="absolute left-4 top-1/2 -translate-y-1/2 text-primary font-bold">$</span>
-                                <input name="monto" type="number" step="0.01" required placeholder="0.00"
-                                    class="w-full h-12 pl-10 pr-4 bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-primary/20 transition-all font-bold"
-                                    inputmode="decimal">
+                        <form action="/loans/{{ loan.id }}/pay" method="POST" class="space-y-4" onsubmit="return validatePaymentDetalle(this, {{ loan.deuda_pendiente }}, '{{ loan.moneda }}')">
+                            <div class="flex p-1 bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-700">
+                                <label class="flex-1 cursor-pointer">
+                                    <input checked type="radio" name="moneda_pago" value="USD" class="peer sr-only" onchange="updateSymbol(this)">
+                                    <div class="py-2 text-center text-xs font-bold rounded-lg text-slate-500 peer-checked:bg-primary/10 peer-checked:text-primary transition-all underline-offset-4 peer-checked:underline">USD</div>
+                                </label>
+                                <label class="flex-1 cursor-pointer">
+                                    <input type="radio" name="moneda_pago" value="VES" class="peer sr-only" onchange="updateSymbol(this)">
+                                    <div class="py-2 text-center text-xs font-bold rounded-lg text-slate-500 peer-checked:bg-primary/10 peer-checked:text-primary transition-all underline-offset-4 peer-checked:underline">VES</div>
+                                </label>
                             </div>
-                            <button type="submit"
-                                class="h-12 px-8 bg-primary hover:bg-primary/90 text-white font-bold rounded-xl shadow-lg shadow-primary/20 active:scale-95 transition-all flex items-center justify-center gap-2">
-                                <span class="material-symbols-outlined">payments</span>
-                                Abonar
-                            </button>
-                        </div>
-                    </form>
+                            <div class="flex flex-col md:flex-row gap-3">
+                                <div class="relative flex-1">
+                                    <span class="symbol-pago absolute left-4 top-1/2 -translate-y-1/2 text-primary font-bold">$</span>
+                                    <input name="monto" type="number" step="0.01" required placeholder="0.00"
+                                        class="w-full h-12 pl-10 pr-4 bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-primary/20 transition-all font-bold"
+                                        inputmode="decimal">
+                                </div>
+                                <button type="submit"
+                                    class="h-12 px-8 bg-primary hover:bg-primary/90 text-white font-bold rounded-xl shadow-lg shadow-primary/20 active:scale-95 transition-all flex items-center justify-center gap-2">
+                                    <span class="material-symbols-outlined">payments</span>
+                                    Abonar
+                                </button>
+                            </div>
+                            <p class="error-monto text-[10px] text-red-500 font-bold hidden mt-1">El monto no puede superar la deuda.</p>
+                        </form>
+                    </div>
                 </div>
                 {% else %}
                 <div
@@ -403,6 +405,37 @@
 
         function formatMoney(amount) {
             return new Intl.NumberFormat('es-VE', { minimumFractionDigits: 2 }).format(amount);
+        }
+
+        const tasa_bcv = Number("{{ tasa_actual }}");
+
+        function updateSymbol(input) {
+            const form = input.closest('form');
+            const symbol = form.querySelector('.symbol-pago');
+            symbol.innerText = input.value === 'USD' ? '$' : 'Bs.';
+        }
+
+        function validatePaymentDetalle(form, deuda, monedaOriginal) {
+            const amountInput = form.querySelector('input[name="monto"]');
+            const amount = parseFloat(amountInput.value);
+            const currency = form.querySelector('input[name="moneda_pago"]:checked').value;
+            const errorLabel = form.querySelector('.error-monto');
+
+            let debtInSelectedCurrency = deuda;
+            if (currency !== monedaOriginal) {
+                if (currency === 'VES' && monedaOriginal === 'USD') {
+                    debtInSelectedCurrency = deuda * tasa_bcv;
+                } else if (currency === 'USD' && monedaOriginal === 'VES') {
+                    debtInSelectedCurrency = deuda / tasa_bcv;
+                }
+            }
+
+            if (amount > debtInSelectedCurrency + 0.01) {
+                errorLabel.classList.remove('hidden');
+                return false;
+            }
+            errorLabel.classList.add('hidden');
+            return true;
         }
 
         function sendGlobalReminder() {
