@@ -52,10 +52,19 @@
                     <button onclick="showTab('users')" id="tab-users" class="px-6 py-2 rounded-xl text-sm font-bold transition-all bg-melo text-white">Usuarios</button>
                     <button onclick="showTab('recovery')" id="tab-recovery" class="px-6 py-2 rounded-xl text-sm font-bold transition-all text-slate-500 hover:text-melo">Recuperación</button>
                 </nav>
-                <button type="button" onclick="toggleDarkMode()" class="flex size-10 items-center justify-center rounded-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:text-primary shadow-sm">
-                    <span class="material-symbols-outlined dark:hidden">dark_mode</span>
-                    <span class="material-symbols-outlined hidden dark:block">light_mode</span>
-                </button>
+                <div class="h-8 w-px bg-slate-200 dark:bg-slate-800 mx-2"></div>
+                <div class="flex items-center gap-2">
+                    <a href="/dashboard" class="flex size-10 items-center justify-center rounded-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:text-melo shadow-sm" title="Dashboard Común">
+                        <span class="material-symbols-outlined">dashboard</span>
+                    </a>
+                    <button type="button" onclick="toggleDarkMode()" class="flex size-10 items-center justify-center rounded-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:text-primary shadow-sm" title="Modo Oscuro">
+                        <span class="material-symbols-outlined dark:hidden">dark_mode</span>
+                        <span class="material-symbols-outlined hidden dark:block">light_mode</span>
+                    </button>
+                    <a href="/logout" class="flex size-10 items-center justify-center rounded-full bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white transition-all shadow-sm" title="Cerrar Sesión">
+                        <span class="material-symbols-outlined">logout</span>
+                    </a>
+                </div>
             </div>
         </header>
 
@@ -123,7 +132,7 @@
                                 {% endif %}
                             </td>
                             <td class="px-8 py-6 text-right">
-                                <form action="/admin/toggle-user/{{ u.id }}?secret={{ secret }}" method="POST">
+                                <form action="/admin/toggle-user/{{ u.id }}" method="POST">
                                     <button type="submit" class="p-2 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-white/5 transition-all">
                                         {% if u.is_active %}
                                         <span class="material-symbols-outlined text-red-500">block</span>

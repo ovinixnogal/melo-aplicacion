@@ -9,6 +9,10 @@ _rate_cache = {
     "value": None
 }
 
+# Tasa de emergencia absoluta (si no hay internet ni registros en DB)
+# Se usa para evitar ZeroDivisionError en el arranque inicial o fallos masivos.
+DEFAULT_FALLBACK_RATE = 36.5 
+
 def get_rate_from_dolarapi() -> float:
     """
     Fuente Principal: API de DolarApi.com - Totalmente confiable y rápida.
@@ -113,9 +117,9 @@ def update_bcv_rate_if_needed(db: Session = None) -> float:
             _rate_cache["value"] = last_rate.valor_bs_bcv
             return last_rate.valor_bs_bcv
 
-        # 6. Fallback total
-        print("RATE: No se pudo obtener tasa. Usando 0.0")
-        return 0.0
+        # 6. Fallback total de emergencia comercial
+        print(f"RATE WARNING: Fallo total de fuentes. Usando emergencia: {DEFAULT_FALLBACK_RATE}")
+        return DEFAULT_FALLBACK_RATE
 
     except Exception as e:
         print(f"RATE: Error crítico en update_bcv_rate_if_needed: {e}")

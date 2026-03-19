@@ -445,8 +445,10 @@ def login_post(
         user.hashed_password = hash_password(password)
         db.commit()
     
-    token = signer.dumps(user.id)
-    response = RedirectResponse(url="/dashboard", status_code=status.HTTP_303_SEE_OTHER)
+    if user.is_admin:
+        response = RedirectResponse(url="/admin/soporte", status_code=status.HTTP_303_SEE_OTHER)
+    else:
+        response = RedirectResponse(url="/dashboard", status_code=status.HTTP_303_SEE_OTHER)
     
     is_prod = os.environ.get("RAILWAY_ENVIRONMENT") == "production"
     response.set_cookie(
@@ -604,16 +606,10 @@ def reset_password_post(
     
     return RedirectResponse(url="/login?msg=password_reset_success", status_code=status.HTTP_303_SEE_OTHER)
 
-@app.get("/soporte-admin", response_class=HTMLResponse)
-def support_admin_get(request: Request, secret: str = "", db: Session = Depends(get_db)):
-    # Si no hay clave configurada en env o si la que se pasa por URL no coincide
-    MASTER_SECRET = os.environ.get("MELO_ADMIN_SECRET", "melo-emergency-key")
-    if secret != MASTER_SECRET:
-        return templates.TemplateResponse("login.html", {
-            "request": request, 
-            "csrf_token": generate_csrf_token(request),
-            "error": "Acceso restringido al panel de soporte. Verifique la clave secreta."
-        })
+@app.get("/admin/soporte", response_class=HTMLResponse)
+def support_admin_get(request: Request, db: Session = Depends(get_db), current_user: User = Depends(require_user)):
+    if not current_user.is_admin:
+        return RedirectResponse(url="/dashboard?error=admin_only", status_code=status.HTTP_303_SEE_OTHER)
     
     # Datos de Recuperación de Contraseña
     recovery_requests = db.query(SupportRequest).order_by(SupportRequest.fecha.desc()).limit(20).all()
@@ -646,21 +642,20 @@ def support_admin_get(request: Request, secret: str = "", db: Session = Depends(
         "request": request, 
         "requests": recovery_requests,
         "users": users_data,
-        "secret": secret
+        "current_user": current_user
     })
 
 @app.post("/admin/toggle-user/{u_id}")
-def toggle_user(request: Request, u_id: int, secret: str = "", db: Session = Depends(get_db)):
-    MASTER_SECRET = os.environ.get("MELO_ADMIN_SECRET", "melo-emergency-key")
-    if secret != MASTER_SECRET:
-        raise HTTPException(status_code=403, detail="No autorizado")
+def toggle_user(request: Request, u_id: int, db: Session = Depends(get_db), current_user: User = Depends(require_user)):
+    if not current_user.is_admin:
+        raise HTTPException(status_code=403, detail="Acceso denegado")
     
     user = db.query(User).filter(User.id == u_id).first()
     if user:
         user.is_active = not user.is_active
         db.commit()
     
-    return RedirectResponse(url=f"/soporte-admin?secret={secret}", status_code=status.HTTP_303_SEE_OTHER)
+    return RedirectResponse(url="/admin/soporte", status_code=status.HTTP_303_SEE_OTHER)
 
 @app.get("/dashboard", response_class=HTMLResponse)
 def dashboard(request: Request, db: Session = Depends(get_db), current_user: User = Depends(require_user)):

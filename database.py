@@ -38,6 +38,7 @@ class User(Base):
     created_at = Column(DateTime, default=get_now_vet)
     last_login = Column(DateTime, nullable=True)
     is_active = Column(Boolean, default=True)
+    is_admin = Column(Boolean, default=False)
     webauthn_id = Column(String, unique=True, nullable=True) # Unico para cada usuario
     
     credentials = relationship("WebAuthnCredential", back_populates="user")
@@ -179,6 +180,13 @@ def init_db():
         except Exception as e:
             # Capturar el texto completo del error para verlo en Railway
             print(f"DATABASE ERROR DETECTED (User.is_active): {str(e)[:100]}")
+            
+        # Inyectar is_admin en users
+        try:
+            conn.execute(text("ALTER TABLE users ADD COLUMN is_admin BOOLEAN DEFAULT FALSE"))
+            print("DATABASE: ✅ Columna 'is_admin' inyectada en 'users'.")
+        except Exception as e:
+            pass
             
         # Inyectar file_size en loan_attachments
         try:
