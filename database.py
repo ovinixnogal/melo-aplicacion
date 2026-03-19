@@ -37,6 +37,7 @@ class User(Base):
     capital_total_ves = Column(Float, default=0.0)
     created_at = Column(DateTime, default=get_now_vet)
     last_login = Column(DateTime, nullable=True)
+    is_active = Column(Boolean, default=True)
     webauthn_id = Column(String, unique=True, nullable=True) # Unico para cada usuario
     
     credentials = relationship("WebAuthnCredential", back_populates="user")
@@ -90,6 +91,7 @@ class LoanAttachment(Base):
     id = Column(Integer, primary_key=True, index=True)
     loan_id = Column(Integer, ForeignKey("loans.id"))
     file_path = Column(String)
+    file_size = Column(Integer, default=0) # Tamaño en bytes
     created_at = Column(DateTime, default=get_now_vet)
     
     loan = relationship("Loan", back_populates="attachments")

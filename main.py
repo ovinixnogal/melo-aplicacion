@@ -214,7 +214,10 @@ def get_current_user(request: Request, db: Session = Depends(get_db)):
         user_id = signer.loads(token, max_age=60 * 60 * 24 * 30)
     except (BadSignature, SignatureExpired):
         return None
-    return db.query(User).filter(User.id == user_id).first()
+    user = db.query(User).filter(User.id == user_id).first()
+    if user and not user.is_active:
+        return None
+    return user
 
 def require_user(current_user: User = Depends(get_current_user)):
     if not current_user:
@@ -430,6 +433,9 @@ def login_post(
     if not user or not verify_password(password, user.hashed_password):
         return RedirectResponse(url="/login?error=1", status_code=status.HTTP_303_SEE_OTHER)
     
+    if not user.is_active:
+        return RedirectResponse(url="/login?error=account_blocked", status_code=status.HTTP_303_SEE_OTHER)
+    
     if not user.hashed_password.startswith("$2b$"):
         user.hashed_password = hash_password(password)
         db.commit()
@@ -604,9 +610,52 @@ def support_admin_get(request: Request, secret: str = "", db: Session = Depends(
             "error": "Acceso restringido al panel de soporte. Verifique la clave secreta."
         })
     
-    # Mostrar las últimas 30 solicitudes de recuperación
-    requests = db.query(SupportRequest).order_by(SupportRequest.fecha.desc()).limit(30).all()
-    return templates.TemplateResponse("admin-soporte.html", {"request": request, "requests": requests})
+    # Datos de Recuperación de Contraseña
+    recovery_requests = db.query(SupportRequest).order_by(SupportRequest.fecha.desc()).limit(20).all()
+    
+    # Gestión de Usuarios
+    all_users = db.query(User).order_by(User.created_at.desc()).all()
+    
+    users_data = []
+    for u in all_users:
+        # Calcular almacenamiento (suma de adjuntos)
+        total_bytes = db.query(func.sum(LoanAttachment.file_size)).join(Loan).join(Client).filter(Client.user_id == u.id).scalar() or 0
+        storage_mb = round(total_bytes / (1024 * 1024), 2)
+        
+        # Conteo de clientes y préstamos
+        client_count = db.query(Client).filter(Client.user_id == u.id).count() or 0
+        loan_count = db.query(Loan).join(Client).filter(Client.user_id == u.id).count() or 0
+        
+        users_data.append({
+            "id": u.id,
+            "email": u.username,
+            "nombre": f"{u.nombre} {u.apellido}",
+            "fecha": u.created_at,
+            "is_active": u.is_active,
+            "storage": storage_mb,
+            "clients": client_count,
+            "loans": loan_count
+        })
+
+    return templates.TemplateResponse("admin-soporte.html", {
+        "request": request, 
+        "requests": recovery_requests,
+        "users": users_data,
+        "secret": secret
+    })
+
+@app.post("/admin/toggle-user/{u_id}")
+def toggle_user(request: Request, u_id: int, secret: str = "", db: Session = Depends(get_db)):
+    MASTER_SECRET = os.environ.get("MELO_ADMIN_SECRET", "melo-emergency-key")
+    if secret != MASTER_SECRET:
+        raise HTTPException(status_code=403, detail="No autorizado")
+    
+    user = db.query(User).filter(User.id == u_id).first()
+    if user:
+        user.is_active = not user.is_active
+        db.commit()
+    
+    return RedirectResponse(url=f"/soporte-admin?secret={secret}", status_code=status.HTTP_303_SEE_OTHER)
 
 @app.get("/dashboard", response_class=HTMLResponse)
 def dashboard(request: Request, db: Session = Depends(get_db), current_user: User = Depends(require_user)):
@@ -1002,7 +1051,12 @@ def new_loan_post(
                     shutil.copyfileobj(upload_file.file, buffer)
                 file_url = f"/static/uploads/{unique_filename}"
             
-            attachment = LoanAttachment(loan_id=new_loan.id, file_path=file_url)
+            # Calcular tamaño antes de guardar
+            upload_file.file.seek(0, 2)
+            f_size = upload_file.file.tell()
+            upload_file.file.seek(0)
+            
+            attachment = LoanAttachment(loan_id=new_loan.id, file_path=file_url, file_size=f_size)
             db.add(attachment)
     
     monto_usd_egreso = monto_principal if moneda == "USD" else monto_base_db

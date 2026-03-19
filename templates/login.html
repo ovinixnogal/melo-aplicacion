@@ -268,6 +268,11 @@
                         document.getElementById('loginSuccess').classList.remove('hidden');
                         document.getElementById('loginSuccess').classList.add('flex');
                     }
+                    if (params.get('error') === 'account_blocked') {
+                        document.getElementById('loginError').classList.remove('hidden');
+                        document.getElementById('loginError').querySelector('.font-bold').textContent = 'Tu cuenta ha sido suspendida. Contacta al administrador.';
+                        document.getElementById('loginError').classList.add('flex');
+                    }
                 </script>
 
                 <!-- Campo de correo -->
