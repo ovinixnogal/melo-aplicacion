@@ -168,29 +168,28 @@ def init_db():
         Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(bind=engine)
     
-    # Migración manual para columnas nuevas si la tabla ya existe
+    # Migración RADICAL para columnas nuevas si la tabla ya existe
     with engine.begin() as conn: # engine.begin maneja automáticamente la transacción (COMMIT)
-        print("DATABASE: Verificando migraciones rudes de columnas...")
-        # Columnas para User
+        print("🛠️ MIGRACION RADICAL v2.4 INICIADA...")
+        
+        # Inyectar is_active en users
         try:
             conn.execute(text("ALTER TABLE users ADD COLUMN is_active BOOLEAN DEFAULT TRUE"))
-            print("DATABASE: ✅ Columna 'is_active' añadida.")
+            print("DATABASE: ✅ Columna 'is_active' inyectada en 'users'.")
         except Exception as e:
-            print(f"DATABASE: Info (users.is_active): {str(e)[:50]}...")
+            # Capturar el texto completo del error para verlo en Railway
+            print(f"DATABASE ERROR DETECTED (User.is_active): {str(e)[:100]}")
             
-        try:
-            conn.execute(text("ALTER TABLE users ADD COLUMN last_login TIMESTAMP"))
-            print("DATABASE: ✅ Columna 'last_login' añadida.")
-        except Exception as e:
-            pass # Ignorar si ya existe
-            
-        # Columnas para LoanAttachment
+        # Inyectar file_size en loan_attachments
         try:
             conn.execute(text("ALTER TABLE loan_attachments ADD COLUMN file_size INTEGER DEFAULT 0"))
-            print("DATABASE: ✅ Columna 'file_size' añadida.")
-        except Exception as e:
+            print("DATABASE: ✅ Columna 'file_size' inyectada.")
+        except Exception:
             pass
             
+        import sys
+        sys.stdout.flush() 
+
 def get_db():
     db = SessionLocal()
     try:
