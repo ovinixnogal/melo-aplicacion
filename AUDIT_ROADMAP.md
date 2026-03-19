@@ -41,6 +41,31 @@ Este documento cataloga los fallos críticos identificados por la auditoría y s
 - **Solución**: Refactorizar para usar fechas reales de vencimiento y calendarios de pagos específicos.
 - [ ] **Estado**: Pendiente.
 
+### 8. Error Crítico en Login (Regression Bug)
+- **Problema**: Tras la última actualización, la variable `token` no estaba definida.
+- **Solución**: Restaurada la generación del token de sesión.
+- [x] **Estado**: Solucionado.
+
+### 9. Vulnerabilidad Masiva de CSRF
+- **Problema**: La gran mayoría de los endpoints `POST` (crear préstamos, registrar pagos, ajustes de capital) no están verificando el token CSRF. Un atacante podría realizar operaciones a nombre del usuario.
+- **Solución**: Aplicar el helper `verify_csrf_token` de forma consistente en todos los formularios sensibles.
+- [ ] **Estado**: Pendiente.
+
+### 10. Desfase de Zonas Horarias (UTC vs VET)
+- **Problema**: El sistema mezcla `datetime.utcnow()` con `get_now_vet()`, lo que causa que los reportes mensuales tengan discrepancias de hasta un día dependiendo de la hora del registro.
+- **Solución**: Estandarizar toda la aplicación para usar `timezone.utc` u objetos `datetime` con zona horaria explícita.
+- [ ] **Estado**: Pendiente.
+
+### 11. Riesgo de Spam en Registro
+- **Problema**: El endpoint de `/signup` no tiene límite de tasa (rate limiting), permitiendo ataques de creación masiva de cuentas.
+- **Solución**: Aplicar `check_rate_limit` también en el registro de usuarios.
+- [ ] **Estado**: Pendiente.
+
+### 12. Rendimiento (N+1 Queries) en Panel Admin
+- **Problema**: El panel de administración carga todos los usuarios y luego realiza consultas individuales para contar sus registros y archivos. Con muchos usuarios, la página se volverá extremadamente lenta.
+- **Solución**: Usar `subqueryload` o JOINS con agregaciones para obtener todos los conteos en una sola consulta.
+- [ ] **Estado**: Pendiente.
+
 ---
 
 ## 🛠️ Panel de Administración Profesional

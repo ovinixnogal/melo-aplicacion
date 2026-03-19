@@ -448,6 +448,7 @@ def login_post(
         user.hashed_password = hash_password(password)
         db.commit()
     
+    token = signer.dumps(user.id)
     if user.is_admin:
         response = RedirectResponse(url="/admin/soporte", status_code=status.HTTP_303_SEE_OTHER)
     else:
