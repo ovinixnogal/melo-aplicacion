@@ -149,16 +149,19 @@
                 class="flex items-center gap-3 p-3 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
                 <span class="material-symbols-outlined">group</span> Clientes
             </a>
-            <a href="/loans"
-                class="flex items-center gap-3 p-3 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-                <span class="material-symbols-outlined">account_balance_wallet</span> Préstamos
+            <a href="/loans" class="flex items-center gap-3 p-3 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                <span class="material-symbols-outlined">account_balance_wallet</span> Centro de Préstamos
             </a>
-            <a href="/history/loans"
-                class="flex items-center gap-3 p-3 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-                <span class="material-symbols-outlined">history</span> Historial
+            <a href="/history/loans" class="flex items-center gap-3 p-3 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                <span class="material-symbols-outlined">history</span> Historial Préstamos
             </a>
-            <a href="/settings/profile"
-                class="flex items-center gap-3 p-3 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+            <a href="/history/movements" class="flex items-center gap-3 p-3 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                <span class="material-symbols-outlined">receipt_long</span> Movimientos
+            </a>
+            <a href="/reports" class="flex items-center gap-3 p-3 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                <span class="material-symbols-outlined">analytics</span> Reportes y Analíticas
+            </a>
+            <a href="/settings/profile" class="flex items-center gap-3 p-3 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
                 <span class="material-symbols-outlined">settings</span> Ajustes
             </a>
         </nav>
@@ -263,16 +266,14 @@
             <span class="material-symbols-outlined">group</span>
             <p class="text-[10px] md:text-sm font-medium leading-normal tracking-tight">Clientes</p>
         </a>
-        <a class="flex flex-1 md:flex-row flex-col items-center justify-center gap-2 md:gap-3 text-slate-400 dark:text-slate-500 hover:text-primary transition-colors md:hover:bg-primary/5 md:py-3 md:rounded-xl"
-            href="/loans">
-            <span class="material-symbols-outlined">account_balance_wallet</span>
-            <p class="text-[10px] md:text-sm font-medium leading-normal tracking-tight">Préstamos</p>
-        </a>
-        <a class="flex flex-1 md:flex-row flex-col items-center justify-center gap-2 md:gap-3 text-slate-400 dark:text-slate-500 hover:text-primary transition-colors md:hover:bg-primary/5 md:py-3 md:rounded-xl"
-            href="/settings/profile">
-            <span class="material-symbols-outlined">settings</span>
-            <p class="text-[10px] md:text-sm font-medium leading-normal tracking-tight">Ajustes</p>
-        </a>
+            <a class="flex flex-1 md:flex-row flex-col items-center justify-center gap-2 md:gap-3 text-slate-400 dark:text-slate-500 hover:text-primary transition-colors md:hover:bg-primary/5 md:py-3 md:rounded-xl" href="/loans">
+                <span class="material-symbols-outlined">account_balance_wallet</span>
+                <p class="text-[10px] md:text-sm font-medium leading-normal tracking-tight">Préstamos</p>
+            </a>
+            <a class="flex flex-1 md:flex-row flex-col items-center justify-center gap-2 md:gap-3 text-slate-400 dark:text-slate-500 hover:text-primary transition-colors md:hover:bg-primary/5 md:py-3 md:rounded-xl" href="/reports">
+                <span class="material-symbols-outlined">analytics</span>
+                <p class="text-[10px] md:text-sm font-medium leading-normal tracking-tight">Reportes</p>
+            </a>
     </div>
     <script>
         function toggleSidebar() {

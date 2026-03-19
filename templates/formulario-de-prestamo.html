@@ -964,6 +964,16 @@
 
             // Initial setup
             calculateInstallments();
+
+            // Hide Preloader/Skeleton
+            window.addEventListener('load', function() {
+                const preloader = document.getElementById('preloader');
+                if (preloader) {
+                    setTimeout(() => {
+                        preloader.classList.add('loaded');
+                    }, 1000);
+                }
+            });
         </script>
         <!-- Bottom Navigation Bar -->
         <!-- Main Navigation (Persistent bottom bar) -->
