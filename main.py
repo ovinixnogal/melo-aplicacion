@@ -157,7 +157,10 @@ def verify_password(plain: str, hashed: str) -> bool:
 # Crear tablas en caso de no existir e informar estatus
 try:
     init_db()
-    print("DATABASE: Conexión exitosa y tablas verificadas.")
+    print("DATABASE: ✅ Conexión exitosa y migraciones de columnas verificadas.")
+    print("🚀 MELO FINANCE PRO v2.2 - DASHBOARD ADMINISTRATIVO ACTIVO")
+except Exception as e:
+    print(f"DATABASE ERROR: Falló el inicio de la base de datos: {e}")
 except Exception as e:
     print(f"DATABASE ERROR: Falló la inicialización - {e}")
 

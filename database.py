@@ -1,5 +1,5 @@
 import os
-from sqlalchemy import create_engine, Column, Integer, String, Float, ForeignKey, DateTime, Date, Boolean
+from sqlalchemy import create_engine, Column, Integer, String, Float, ForeignKey, DateTime, Date, Boolean, text
 from sqlalchemy.orm import declarative_base, sessionmaker, relationship
 from datetime import datetime
 import zoneinfo
@@ -167,7 +167,30 @@ def init_db():
         print("DATABASE: Reseteando base de datos (RESET_DATABASE=true)...")
         Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(bind=engine)
-
+    
+    # Migración manual para columnas nuevas si la tabla ya existe
+    with engine.begin() as conn: # engine.begin maneja automáticamente la transacción (COMMIT)
+        print("DATABASE: Verificando migraciones rudes de columnas...")
+        # Columnas para User
+        try:
+            conn.execute(text("ALTER TABLE users ADD COLUMN is_active BOOLEAN DEFAULT TRUE"))
+            print("DATABASE: ✅ Columna 'is_active' añadida.")
+        except Exception as e:
+            print(f"DATABASE: Info (users.is_active): {str(e)[:50]}...")
+            
+        try:
+            conn.execute(text("ALTER TABLE users ADD COLUMN last_login TIMESTAMP"))
+            print("DATABASE: ✅ Columna 'last_login' añadida.")
+        except Exception as e:
+            pass # Ignorar si ya existe
+            
+        # Columnas para LoanAttachment
+        try:
+            conn.execute(text("ALTER TABLE loan_attachments ADD COLUMN file_size INTEGER DEFAULT 0"))
+            print("DATABASE: ✅ Columna 'file_size' añadida.")
+        except Exception as e:
+            pass
+            
 def get_db():
     db = SessionLocal()
     try:
