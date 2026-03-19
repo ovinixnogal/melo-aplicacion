@@ -108,6 +108,7 @@
         }
     </style>
     <script src="/static/darkMode.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@hotwired/turbo@7.3.0/dist/turbo.es2017-umd.js"></script>
 </head>
 
 <body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen">
@@ -136,7 +137,7 @@
         class="fixed inset-0 bg-black/50 z-[90] hidden backdrop-blur-sm transition-opacity"></div>
 
     <!-- Sidebar / Drawer -->
-    <div id="sidebar"
+    <div id="sidebar-persistent" data-turbo-permanent
         class="fixed top-0 left-0 bottom-0 w-64 bg-white dark:bg-slate-900 z-[100] -translate-x-full transition-transform duration-300 ease-in-out border-r border-slate-200 dark:border-slate-800 flex flex-col">
         <div class="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
             <h2 class="text-xl font-black text-primary italic">Melo <span
@@ -434,12 +435,25 @@
                         </div>
 
                         <!-- Notes -->
-                        <div class="space-y-1.5 pb-20">
+                        <div class="space-y-1.5 pb-8">
                             <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">Notas
                                 adicionales</label>
                             <textarea name="notas" rows="3"
                                 class="w-full p-4 rounded-xl bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:border-primary focus:ring-primary dark:focus:ring-primary/50 text-base font-medium transition-shadow resize-none"
                                 placeholder="Propósito del préstamo..."></textarea>
+                        </div>
+
+                        <!-- 9. Submit Button (Sequential at the end) -->
+                        <div class="pt-6 border-t border-slate-100 dark:border-slate-800 pb-20">
+                            <button type="submit" id="submitBtnUnified" disabled
+                                class="w-full h-16 bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-600 font-black text-lg rounded-2xl shadow-xl flex items-center justify-center gap-3 transition-all active:scale-[0.98] cursor-not-allowed uppercase tracking-widest overflow-hidden group relative">
+                                <div id="btnBgProgress" class="absolute inset-0 bg-primary translate-x-[-100%] transition-transform duration-500 ease-out"></div>
+                                <span class="material-symbols-outlined text-2xl relative z-10 transition-colors group-disabled:text-slate-400">rocket_launch</span>
+                                <span class="relative z-10 transition-colors" id="btnText">Completar campos necesarios</span>
+                            </button>
+                            <p id="validationHint" class="text-center text-[10px] font-bold text-slate-400 uppercase mt-4 tracking-tighter">
+                                Falta: <span id="hintDetail" class="text-primary">Monto y Cliente</span>
+                            </p>
                         </div>
                     </div>
 
@@ -511,13 +525,14 @@
                                     id="capitalWarningText"></p>
                             </div>
 
-                            <!-- Desktop Submit (Visible only on LG up) -->
+                            <!-- Desktop Summary Preview (Informational only) -->
                             <div class="hidden lg:block pt-4">
-                                <button type="submit" id="submitBtnDesktop"
-                                    class="w-full h-16 bg-primary hover:bg-primary/90 text-white font-black text-lg rounded-2xl shadow-2xl shadow-primary/30 flex items-center justify-center gap-3 transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-widest">
-                                    <span class="material-symbols-outlined text-2xl">rocket_launch</span>
-                                    <span>Otorgar Préstamo</span>
-                                </button>
+                                <div class="p-6 rounded-2xl bg-primary/5 border border-primary/10 flex flex-col items-center gap-2">
+                                    <span class="material-symbols-outlined text-primary text-3xl">info</span>
+                                    <p class="text-[10px] font-black text-primary uppercase text-center tracking-widest">
+                                        Completa el formulario a la izquierda para habilitar el botón de otorgar préstamo.
+                                    </p>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -569,15 +584,8 @@
                 </div>
             </div>
 
-            <!-- Bottom Action Bar (Mobile Only - Raised to avoid overlap with Nav Bar) -->
-            <div
-                class="fixed bottom-[96px] left-0 right-0 z-[70] lg:hidden p-4 bg-transparent pointer-events-none mb-[env(safe-area-inset-bottom)]">
-                <button type="submit" id="submitBtnMobile"
-                    class="w-full h-16 bg-primary hover:bg-primary/90 text-white font-black text-lg rounded-2xl shadow-2xl shadow-primary/30 flex items-center justify-center gap-3 transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-widest pointer-events-auto">
-                    <span class="material-symbols-outlined text-2xl">rocket_launch</span>
-                    <span>Otorgar Préstamo</span>
-                </button>
-            </div>
+            <!-- Bottom Action Bar removed to favor sequential logic -->
+
         </form>
 
         <!-- Script to sync both buttons and handle errors -->
@@ -747,38 +755,54 @@
                 const freqLabels = { 'mensual': '/ MES', 'quincenal': '/ QUINCENA', 'semanal': '/ SEMANA', 'diario': '/ DÍA' };
                 document.getElementById('summaryFreqText').innerText = freqLabels[freq];
 
-                // Validate Capital
-                const warningDiv = document.getElementById('capitalWarning');
-                const warningText = document.getElementById('capitalWarningText');
-                const submitBtnDesktop = document.getElementById('submitBtnDesktop');
-                const submitBtnMobile = document.getElementById('submitBtnMobile');
+                // Unified Validation Logic
+                const submitBtn = document.getElementById('submitBtnUnified');
+                const btnBg = document.getElementById('btnBgProgress');
+                const btnText = document.getElementById('btnText');
+                const hint = document.getElementById('hintDetail');
+                const clientId = document.getElementById('selectedClientId').value;
+                const progressDiv = document.getElementById('capitalWarning');
 
+                let missing = [];
+                if (!clientId) missing.push("Cliente");
+                if (amountRaw <= 0) missing.push("Monto");
+                if (installments <= 0) missing.push("Cuotas");
+
+                // Check Capital availability
                 let capitalSuficiente = true;
                 if (currency === 'USD') {
-                    if (amountRaw > capitalUSD) {
-                        warningText.innerText = `Capital en USD no disponible (Tienes $${capitalUSD.toFixed(2)})`;
-                        capitalSuficiente = false;
-                    }
+                    if (amountRaw > capitalUSD) capitalSuficiente = false;
                 } else if (currency === 'VES') {
-                    if (amountRaw > capitalVES) {
-                        warningText.innerText = `Capital en VES no disponible (Tienes Bs. ${capitalVES.toFixed(2)})`;
-                        capitalSuficiente = false;
-                    }
+                    if (amountRaw > capitalVES) capitalSuficiente = false;
                 }
 
-                if (!capitalSuficiente) {
-                    warningDiv.classList.remove('hidden');
-                    if (submitBtnDesktop) submitBtnDesktop.disabled = true;
-                    if (submitBtnMobile) submitBtnMobile.disabled = true;
+                if (missing.length === 0 && capitalSuficiente) {
+                    submitBtn.disabled = false;
+                    submitBtn.classList.remove('bg-slate-200', 'dark:bg-slate-800', 'text-slate-400', 'dark:text-slate-600', 'cursor-not-allowed');
+                    submitBtn.classList.add('bg-primary', 'text-white', 'hover:brightness-110', 'shadow-primary/30');
+                    btnBg.style.transform = "translateX(0)";
+                    btnText.innerText = "¡Todo listo! Otorgar Préstamo";
+                    document.getElementById('validationHint').classList.add('hidden');
                 } else {
-                    warningDiv.classList.add('hidden');
-                    if (submitBtnDesktop) submitBtnDesktop.disabled = false;
-                    if (submitBtnMobile) submitBtnMobile.disabled = false;
+                    submitBtn.disabled = true;
+                    submitBtn.classList.add('bg-slate-200', 'dark:bg-slate-800', 'text-slate-400', 'dark:text-slate-600', 'cursor-not-allowed');
+                    submitBtn.classList.remove('bg-primary', 'text-white', 'hover:brightness-110', 'shadow-primary/30');
+                    btnBg.style.transform = "translateX(-100%)";
+                    
+                    if (!capitalSuficiente) {
+                        btnText.innerText = "Capital Insuficiente";
+                        document.getElementById('validationHint').classList.remove('hidden');
+                        hint.innerText = "Fondos no disponibles";
+                    } else {
+                        btnText.innerText = "Faltan campos obligatorios";
+                        document.getElementById('validationHint').classList.remove('hidden');
+                        hint.innerText = missing.join(", ");
+                    }
                 }
 
                 // Enable/Disable Share Button
                 const shareBtn = document.getElementById('shareBtn');
-                if (amountRaw > 0 && document.getElementById('selectedClientId').value) {
+                if (amountRaw > 0 && clientId) {
                     shareBtn.classList.remove('opacity-50', 'cursor-not-allowed');
                     shareBtn.disabled = false;
                 } else {
@@ -977,7 +1001,7 @@
         </script>
         <!-- Bottom Navigation Bar -->
         <!-- Main Navigation (Persistent bottom bar) -->
-        <div
+        <div id="bottom-navbar-persistent" data-turbo-permanent
             class="fixed bottom-0 md:bottom-6 left-0 right-0 flex max-w-md md:max-w-3xl lg:max-w-5xl mx-auto gap-2 border-t md:border border-slate-200 dark:border-slate-700 md:rounded-3xl md:shadow-2xl bg-white/90 dark:bg-slate-900/90 backdrop-blur-md px-4 pb-6 pt-2 md:py-2 z-50 transition-all">
             <a class="flex flex-1 md:flex-row flex-col items-center justify-center gap-2 md:gap-3 text-slate-400 dark:text-slate-500 hover:text-primary transition-colors md:hover:bg-primary/5 md:py-3 md:rounded-xl"
                 href="/dashboard">
