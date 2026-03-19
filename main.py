@@ -9,7 +9,7 @@ from typing import List
 import bcrypt
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 
-from database import engine, Base, get_db, init_db, User, Client, Loan, Transaction, Rate, CapitalTransaction, Notification, LoanAttachment, WebAuthnCredential, PushSubscription
+from database import engine, Base, get_db, init_db, User, Client, Loan, Transaction, Rate, CapitalTransaction, Notification, LoanAttachment, WebAuthnCredential, PushSubscription, SupportRequest
 import schemas
 from scraper import update_bcv_rate_if_needed
 import utils
@@ -520,8 +520,12 @@ def forgot_password_post(
         token = signer.dumps(user.username, salt='password-reset')
         reset_link = f"{request.base_url}reset-password/{token}"
         
-        # LOG PARA DESARROLLO: En lugar de enviar un mail real (que requiere SMTP), 
-        # imprimimos el link en consola. El usuario debe configurar SMTP para producción.
+        # Guardar en soporte para que se vea en el panel de admin si no hay SMTP
+        new_support = SupportRequest(email=email, token=token)
+        db.add(new_support)
+        db.commit()
+        
+        # LOG PARA DESARROLLO (Railway consola)
         print("\n" + "="*50)
         print(f"RECUPERACIÓN DE CONTRASEÑA PARA: {email}")
         print(f"LINK: {reset_link}")
@@ -579,9 +583,30 @@ def reset_password_post(
     user = db.query(User).filter(User.username == email).first()
     if user:
         user.hashed_password = hash_password(password)
+        
+        # Marcar la solicitud como atendida si existe en la tabla de soporte
+        support_req = db.query(SupportRequest).filter(SupportRequest.token == token).first()
+        if support_req:
+            support_req.atendida = True
+            
         db.commit()
     
     return RedirectResponse(url="/login?msg=password_reset_success", status_code=status.HTTP_303_SEE_OTHER)
+
+@app.get("/soporte-admin", response_class=HTMLResponse)
+def support_admin_get(request: Request, secret: str = "", db: Session = Depends(get_db)):
+    # Si no hay clave configurada en env o si la que se pasa por URL no coincide
+    MASTER_SECRET = os.environ.get("MELO_ADMIN_SECRET", "melo-emergency-key")
+    if secret != MASTER_SECRET:
+        return templates.TemplateResponse("login.html", {
+            "request": request, 
+            "csrf_token": generate_csrf_token(request),
+            "error": "Acceso restringido al panel de soporte. Verifique la clave secreta."
+        })
+    
+    # Mostrar las últimas 30 solicitudes de recuperación
+    requests = db.query(SupportRequest).order_by(SupportRequest.fecha.desc()).limit(30).all()
+    return templates.TemplateResponse("admin-soporte.html", {"request": request, "requests": requests})
 
 @app.get("/dashboard", response_class=HTMLResponse)
 def dashboard(request: Request, db: Session = Depends(get_db), current_user: User = Depends(require_user)):

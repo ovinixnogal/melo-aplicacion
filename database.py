@@ -140,6 +140,14 @@ class WebAuthnCredential(Base):
     
     user = relationship("User", back_populates="credentials")
 
+class SupportRequest(Base):
+    __tablename__ = "support_requests"
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String)
+    token = Column(String)
+    fecha = Column(DateTime, default=get_now_vet)
+    atendida = Column(Boolean, default=False)
+
 class PushSubscription(Base):
     __tablename__ = "push_subscriptions"
     id = Column(Integer, primary_key=True, index=True)
