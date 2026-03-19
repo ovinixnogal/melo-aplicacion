@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html class="light" lang="es">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport" />
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Melo Finance">
+    <meta name="theme-color" content="#043dae">
+    <title>Melo Finance - Términos y Condiciones</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=block" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0,1&display=block" rel="stylesheet" />
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "melo": "#043dae",
+                        "melo-dark": "#032b7c",
+                    },
+                    fontFamily: {
+                        sans: ["Outfit", "system-ui", "sans-serif"],
+                    },
+                },
+            },
+        }
+    </script>
+    <style>
+        body { font-family: 'Outfit', sans-serif; -webkit-font-smoothing: antialiased; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .logo-text { font-size: 1.8rem; font-weight: 800; letter-spacing: -0.02em; line-height: 1; }
+        .logo-melo { color: #043dae; }
+        .logo-finance { color: #1e293b; }
+        .dark .logo-finance { color: #e2e8f0; }
+        .wave-bg {
+            position: fixed;
+            bottom: 0; left: 0; width: 100%; height: 200px;
+            background: linear-gradient(180deg, transparent 0%, rgba(4, 61, 174, 0.03) 100%);
+            border-radius: 50% 50% 0 0; pointer-events: none;
+        }
+        :root { --bg-light: #f5f6f8; --bg-dark: #0f1623; }
+        /* Skeleton */
+        #preloader {
+            position: fixed; inset: 0; z-index: 99999; background: #ffffff;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            transition: opacity 0.5s ease-in-out, visibility 0.5s;
+        }
+        .dark #preloader { background: #000000; }
+        #preloader.loaded { opacity: 0; visibility: hidden; }
+        .shimmer {
+            background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.4) 50%, rgba(255,255,255,0) 100%);
+            background-size: 200% 100%; animation: shimmer-anim 1.5s infinite linear;
+        }
+        .dark .shimmer {
+            background: linear-gradient(90deg, rgba(15,22,35,0) 0%, rgba(255,255,255,0.05) 50%, rgba(15,22,35,0) 100%);
+            background-size: 200% 100%;
+        }
+        @keyframes shimmer-anim { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+        .skeleton-item { background: rgba(4, 61, 174, 0.05); border-radius: 2rem; position: relative; overflow: hidden; }
+        .dark .skeleton-item { background: rgba(255, 255, 255, 0.05); }
+    </style>
+    <script src="/static/darkMode.js"></script>
+</head>
+
+<body class="bg-white dark:bg-black min-h-screen flex flex-col relative overflow-x-hidden antialiased text-slate-900 dark:text-white">
+    <div id="preloader">
+        <div class="w-full max-w-2xl mx-auto p-8 space-y-10">
+            <div class="space-y-4 items-center flex flex-col">
+                <div class="skeleton-item shimmer h-16 w-48"></div>
+                <div class="skeleton-item shimmer h-8 w-3/4"></div>
+            </div>
+            <div class="space-y-6">
+                <div class="skeleton-item shimmer h-4 w-full"></div>
+                <div class="skeleton-item shimmer h-4 w-full"></div>
+                <div class="skeleton-item shimmer h-4 w-3/4"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="absolute top-4 right-4 z-50"> 
+        <button type="button" onclick="toggleDarkMode()" class="flex size-10 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-primary transition-colors">
+            <span class="material-symbols-outlined dark:hidden">dark_mode</span>
+            <span class="material-symbols-outlined hidden dark:block">light_mode</span>
+        </button>
+    </div>
+    <div class="fixed inset-0 bg-gradient-to-br from-melo/5 via-transparent to-transparent pointer-events-none"></div>
+    <div class="wave-bg"></div>
+
+    <div class="relative flex-1 flex flex-col max-w-4xl mx-auto w-full p-6 py-12">
+        <div class="flex items-center gap-4 mb-8">
+            <a href="/signup" class="flex size-10 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-melo transition-colors">
+                <span class="material-symbols-outlined">arrow_back</span>
+            </a>
+            <div class="logo-text inline-block">
+                <span class="logo-melo">Melo</span>
+                <span class="logo-finance font-extrabold not-italic">Finance</span>
+            </div>
+        </div>
+
+        <div class="bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl rounded-[2.5rem] p-8 md:p-12 border border-slate-200 dark:border-slate-800 shadow-2xl shadow-melo/5">
+            <h1 class="text-3xl md:text-5xl font-black mb-8 tracking-tight">Términos y Condiciones</h1>
+            
+            <div class="space-y-8 text-lg text-slate-600 dark:text-slate-300 font-medium leading-relaxed">
+                
+                <section class="space-y-4">
+                    <h2 class="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                        <span class="material-symbols-outlined text-melo">gavel</span>
+                        1. Aceptación de los Términos
+                    </h2>
+                    <p>Al acceder y utilizar el sistema <strong>Melo Finance</strong>, usted acepta estar sujeto a estos términos y condiciones. Si no está de acuerdo con alguna parte, por favor absténgase de usar la plataforma.</p>
+                </section>
+
+                <section class="space-y-4">
+                    <h2 class="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                        <span class="material-symbols-outlined text-melo">admin_panel_settings</span>
+                        2. Uso de la Plataforma
+                    </h2>
+                    <p>La plataforma está diseñada para la gestión privada de préstamos en formato bimoneda (USD/VES). Usted es totalmente responsable de la legalidad, exactitud y validez de las operaciones y tasas de interés que gestione dentro de su perfil.</p>
+                </section>
+
+                <section class="space-y-4">
+                    <h2 class="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                        <span class="material-symbols-outlined text-melo">privacy_tip</span>
+                        3. Privacidad y Datos
+                    </h2>
+                    <ul class="list-disc pl-6 space-y-2">
+                        <li>Garantizamos la protección criptográfica de sus credenciales.</li>
+                        <li>Los datos de sus clientes son confidenciales y se almacenan en un entorno seguro.</li>
+                        <li>No compartimos ni vendemos su información financiera con terceros.</li>
+                    </ul>
+                </section>
+
+                <section class="space-y-4">
+                    <h2 class="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                        <span class="material-symbols-outlined text-melo">warning</span>
+                        4. Limitación de Responsabilidad
+                    </h2>
+                    <p>Melo Finance provee una herramienta de software (SaaS). No somos una entidad financiera y no intervenimos en las decisiones crediticias, cobros o manejo de divisas en la vida real. El riesgo de impago es responsabilidad exclusiva del administrador del préstamo.</p>
+                </section>
+
+            </div>
+
+            <div class="mt-12 pt-8 border-t border-slate-200 dark:border-slate-800 text-center">
+                <a href="/signup" class="inline-flex py-4 px-8 bg-melo text-white rounded-full font-black text-lg shadow-xl shadow-melo/20 hover:bg-melo-dark active:scale-[0.98] transition-all items-center gap-3">
+                    Acepto y quiero registrarme
+                    <span class="material-symbols-outlined">check_circle</span>
+                </a>
+            </div>
+        </div>
+        
+        <p class="text-center text-xs text-slate-400 font-medium mt-8">Última actualización: 2026</p>
+    </div>
+
+    <script>
+        window.addEventListener('load', function() {
+            const preloader = document.getElementById('preloader');
+            if (preloader) {
+                setTimeout(() => { preloader.classList.add('loaded'); }, 800);
+            }
+        });
+    </script>
+</body>
+</html>

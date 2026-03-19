@@ -1,0 +1,33 @@
+# Instrucciones de la Aplicación Melo Finance
+
+## ¿Dónde se aloja?
+La aplicación está configurada para alojarse en **Railway.app**, conectada a tu repositorio de GitHub para despliegues automáticos.
+- **Plataforma:** Railway.app
+- **Repositorio:** GitHub (rama `main`)
+- **Base de Datos:** PostgreSQL (en producción) / SQLite (local)
+
+## ¿Cómo arrancar la aplicación localmente?
+
+Sigue estos pasos en tu terminal (PowerShell o CMD):
+
+1. **Activar el entorno virtual:**
+   ```powershell
+   .venv\Scripts\activate
+   ```
+
+2. **Instalar dependencias (si es necesario):**
+   ```powershell
+   pip install -r requirements.txt
+   ```
+
+3. **Ejecutar el servidor:**
+   ```powershell
+   uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+   ```
+
+4. **Acceder a la app:**
+   Abre tu navegador en [http://localhost:8000](http://localhost:8000)
+
+## Credenciales por Defecto (Acceso inicial)
+- **Usuario:** admin@melofinance.com
+- **Contraseña:** admin123

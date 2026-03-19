@@ -312,7 +312,7 @@
                     <input type="checkbox" required
                         class="w-5 h-5 rounded-lg border-slate-200 text-melo focus:ring-melo/20 transition-all cursor-pointer" />
                     <span class="text-xs text-slate-500 font-medium group-hover:text-slate-700 transition-colors">
-                        Acepto los <span class="text-melo font-black">términos y condiciones</span>
+                        Acepto los <a href="/terminos" target="_blank" class="text-melo font-black hover:underline">términos y condiciones</a>
                     </span>
                 </label>
 
@@ -327,6 +327,9 @@
             <!-- Error message container -->
             <div id="passwordError" class="hidden align-center justify-center mt-2">
                 <p class="text-xs text-red-500 font-bold text-center">Las contraseñas no coinciden.</p>
+            </div>
+            <div id="emailError" class="hidden align-center justify-center mt-2 p-3 bg-red-50 dark:bg-red-500/10 rounded-xl border border-red-100 dark:border-red-500/20">
+                <p class="text-sm text-red-500 font-bold text-center">Ese correo electrónico ya está registrado.</p>
             </div>
 
             <!-- Footer -->
@@ -377,6 +380,10 @@
                 setTimeout(() => {
                     preloader.classList.add('loaded');
                 }, 800);
+            }
+            
+            if (new URLSearchParams(window.location.search).get('error') === 'exists') {
+                document.getElementById('emailError').classList.remove('hidden');
             }
         });
     </script>

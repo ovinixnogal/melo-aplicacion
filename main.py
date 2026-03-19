@@ -403,6 +403,10 @@ def push_test(db: Session = Depends(get_db), current_user: User = Depends(requir
 def index():
     return RedirectResponse(url="/login")
 
+@app.get("/terminos", response_class=HTMLResponse)
+def terminos_get(request: Request):
+    return templates.TemplateResponse("terminos.html", {"request": request})
+
 @app.get("/login", response_class=HTMLResponse)
 def login_get(request: Request):
     csrf_token = generate_csrf_token(request)
@@ -464,7 +468,7 @@ def signup_post(
         raise HTTPException(status_code=403, detail="CSRF Token inválido")
     existing = db.query(User).filter(User.username == email).first()
     if existing:
-        return RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
+        return RedirectResponse(url="/signup?error=exists", status_code=status.HTTP_303_SEE_OTHER)
     user = User(
         username=email, 
         nombre=nombre, 
@@ -490,6 +494,94 @@ def logout():
     response = RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
     response.delete_cookie("session_token")
     return response
+
+@app.get("/forgot-password", response_class=HTMLResponse)
+def forgot_password_get(request: Request):
+    csrf_token = generate_csrf_token(request)
+    return templates.TemplateResponse("forgot-password.html", {"request": request, "csrf_token": csrf_token})
+
+@app.post("/forgot-password")
+def forgot_password_post(
+    request: Request,
+    email: str = Form(""),
+    csrf_token: str = Form(""),
+    db: Session = Depends(get_db)
+):
+    if not verify_csrf_token(csrf_token, request):
+        return templates.TemplateResponse("forgot-password.html", {
+            "request": request, 
+            "error": "CSRF Token inválido",
+            "csrf_token": generate_csrf_token(request)
+        })
+    
+    user = db.query(User).filter(User.username == email).first()
+    if user:
+        # Generar token de recuperación (expira en 1 hora)
+        token = signer.dumps(user.username, salt='password-reset')
+        reset_link = f"{request.base_url}reset-password/{token}"
+        
+        # LOG PARA DESARROLLO: En lugar de enviar un mail real (que requiere SMTP), 
+        # imprimimos el link en consola. El usuario debe configurar SMTP para producción.
+        print("\n" + "="*50)
+        print(f"RECUPERACIÓN DE CONTRASEÑA PARA: {email}")
+        print(f"LINK: {reset_link}")
+        print("="*50 + "\n")
+        
+        # Aquí iría el código para enviar el mail (ej. usando fastapi-mail o smtplib)
+        # Por ahora simulamos éxito visualmente.
+        
+    return templates.TemplateResponse("forgot-password.html", {
+        "request": request, 
+        "success": True,
+        "csrf_token": generate_csrf_token(request)
+    })
+
+@app.get("/reset-password/{token}", response_class=HTMLResponse)
+def reset_password_get(request: Request, token: str):
+    try:
+        # Verificar token (vence en 1 hora)
+        email = signer.loads(token, salt='password-reset', max_age=3600)
+    except:
+        return RedirectResponse(url="/forgot-password?error=token_invalid", status_code=status.HTTP_303_SEE_OTHER)
+    
+    csrf_token = generate_csrf_token(request)
+    return templates.TemplateResponse("reset-password.html", {
+        "request": request, 
+        "token": token, 
+        "csrf_token": csrf_token
+    })
+
+@app.post("/reset-password/{token}")
+def reset_password_post(
+    request: Request,
+    token: str,
+    password: str = Form(...),
+    confirm_password: str = Form(...),
+    csrf_token: str = Form(""),
+    db: Session = Depends(get_db)
+):
+    if not verify_csrf_token(csrf_token, request):
+        raise HTTPException(status_code=403, detail="CSRF Token inválido")
+    
+    try:
+        email = signer.loads(token, salt='password-reset', max_age=3600)
+    except:
+        return RedirectResponse(url="/forgot-password?error=token_expired", status_code=status.HTTP_303_SEE_OTHER)
+    
+    if password != confirm_password:
+        return templates.TemplateResponse("reset-password.html", {
+            "request": request, 
+            "token": token, 
+            "error": "Las contraseñas no coinciden",
+            "csrf_token": generate_csrf_token(request)
+        })
+    
+    user = db.query(User).filter(User.username == email).first()
+    if user:
+        user.hashed_password = hash_password(password)
+        db.commit()
+    
+    return RedirectResponse(url="/login?msg=password_reset_success", status_code=status.HTTP_303_SEE_OTHER)
 
 @app.get("/dashboard", response_class=HTMLResponse)
 def dashboard(request: Request, db: Session = Depends(get_db), current_user: User = Depends(require_user)):
