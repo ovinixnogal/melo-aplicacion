@@ -22,9 +22,9 @@ Este documento cataloga los fallos críticos identificados por la auditoría y s
 - [x] **Estado**: Solucionado.
 
 ### 4. Precisión Financiera (Floats vs Decimals)
-- **Problema**: El uso de `float` causa errores de redondeo acumulativos (pérdida de céntimos en miles de operaciones).
-- **Solución**: Migrar todos los campos `monto` a `Numeric` en SQLAlchemy y `Decimal` en Pydantic.
-- [ ] **Estado**: Pendiente.
+- **Problema**: El uso de `float` causaba errores de redondeo acumulativos.
+- **Solución**: Se han migrado todos los modelos SQLAlchemy, esquemas Pydantic, utilidades de cálculo y dashboards (Reportes y General) a usar `Decimal`.
+- [x] **Estado**: Solucionado.
 
 ### 5. Falta de Atomicidad en Transacciones
 - **Problema**: Si el sistema falla entre la deducción de capital y la creación del préstamo, el capital se pierde del fondo del usuario sin que el préstamo quede registrado.

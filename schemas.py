@@ -1,11 +1,12 @@
 from pydantic import BaseModel, Field
 from typing import Optional
 from datetime import datetime
+from decimal import Decimal
 
 # --- schemas para User ---
 class UserBase(BaseModel):
     username: str
-    capital_total_usd: float = 0.0
+    capital_total_usd: Decimal = Decimal("0.0")
 
 class UserCreate(UserBase):
     password: str
@@ -34,10 +35,10 @@ class ClientResponse(ClientBase):
 
 # --- schemas para Loan ---
 class LoanBase(BaseModel):
-    monto_principal: float
-    monto_original: Optional[float] = None
+    monto_principal: Decimal
+    monto_original: Optional[Decimal] = None
     moneda: str = Field(..., description="'USD' o 'VES'")
-    porcentaje_interes: float
+    porcentaje_interes: Decimal
 
 class LoanCreate(LoanBase):
     client_id: int
@@ -45,7 +46,7 @@ class LoanCreate(LoanBase):
 class LoanResponse(LoanBase):
     id: int
     client_id: int
-    tasa_bcv_snapshot: float
+    tasa_bcv_snapshot: Decimal
     estatus: str
     fecha_creacion: datetime
 
@@ -55,7 +56,7 @@ class LoanResponse(LoanBase):
 # --- schemas para Transaction ---
 class TransactionBase(BaseModel):
     tipo: str = Field(..., description="'pago_cuota', 'ingreso_extra'")
-    monto: float
+    monto: Decimal
 
 class TransactionCreate(TransactionBase):
     loan_id: int

@@ -8,6 +8,7 @@ import shutil
 from typing import List
 import bcrypt
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
+from decimal import Decimal, ROUND_HALF_UP, InvalidOperation
 
 from database import engine, Base, get_db, init_db, User, Client, Loan, Transaction, Rate, CapitalTransaction, Notification, LoanAttachment, WebAuthnCredential, PushSubscription, SupportRequest
 import schemas
@@ -191,8 +192,10 @@ def format_currency(value):
     try:
         if value is None:
             return "0,00"
-        return "{:,.2f}".format(float(value)).replace(",", "X").replace(".", ",").replace("X", ".")
-    except (ValueError, TypeError):
+        # Forzar Decimal para redondeo seguro antes de formatear
+        d_val = Decimal(str(value)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        return "{:,.2f}".format(float(d_val)).replace(",", "X").replace(".", ",").replace("X", ".")
+    except (ValueError, TypeError, InvalidOperation):
         return value
 
 templates.env.filters["format_currency"] = format_currency
@@ -672,14 +675,17 @@ def dashboard(request: Request, db: Session = Depends(get_db), current_user: Use
     prestamos_vencidos: int = sum(1 for l in active_loans if utils.chequear_cuota_vencida(l))
     total_prestamos_activos: int = len(active_loans)
     
-    capital_prestado_usd: float = sum(max(0.0, l.monto_principal - sum(t.monto for t in l.transactions if t.tipo == 'pago_cuota')) for l in active_loans)
+    capital_prestado_usd: Decimal = sum(
+        max(Decimal("0.0"), l.monto_principal - sum(t.monto for t in l.transactions if t.tipo == 'pago_cuota')) 
+        for l in active_loans
+    )
 
-    ganancias_proyectadas: float = sum(
-        utils.calcular_interes_simple(l.monto_principal, l.porcentaje_interes) * (l.cuotas_totales or 1)
+    ganancias_proyectadas: Decimal = sum(
+        utils.calcular_interes_simple(l.monto_principal, l.porcentaje_interes) * Decimal(str(l.cuotas_totales or 1))
         for l in active_loans
     )
     
-    ganancias_reales: float = 0.0
+    ganancias_reales: Decimal = Decimal("0.0")
     all_user_loans = db.query(Loan).join(Client).filter(Client.user_id == user.id).all()
     for l in all_user_loans:
         pagos_usd = sum(t.monto for t in l.transactions if t.tipo == 'pago_cuota')
@@ -688,8 +694,8 @@ def dashboard(request: Request, db: Session = Depends(get_db), current_user: Use
     
     unread_count = db.query(Notification).filter(Notification.user_id == user.id, Notification.leida == False).count()
 
-    disponible_usd = user.capital_total_usd
-    disponible_ves = user.capital_total_ves
+    disponible_usd: Decimal = user.capital_total_usd
+    disponible_ves: Decimal = user.capital_total_ves
 
     meses_labels = []
     meses_valores = []
@@ -711,15 +717,15 @@ def dashboard(request: Request, db: Session = Depends(get_db), current_user: Use
         else:
             end = datetime(target_y, target_m + 1, 1)
             
-        sum_mes: float = db.query(func.sum(Transaction.monto)).join(Loan).join(Client).filter(
+        sum_mes: Decimal = db.query(func.sum(Transaction.monto)).join(Loan).join(Client).filter(
             Client.user_id == user.id,
             Transaction.tipo == 'pago_cuota',
             Transaction.fecha >= start,
             Transaction.fecha < end
-        ).scalar() or 0.0
+        ).scalar() or Decimal("0.0")
         meses_valores.append(sum_mes)
         
-    max_val: float = max(meses_valores) if meses_valores and max(meses_valores) > 0 else 1.0
+    max_val: Decimal = max(meses_valores) if meses_valores and max(meses_valores) > Decimal("0.0") else Decimal("1.0")
     grafico_data = [{"label": l, "height": int((v / max_val) * 100)} for l, v in zip(meses_labels, meses_valores)]
 
     return templates.TemplateResponse("dashboard.html", {
@@ -947,9 +953,9 @@ def new_loan_get(request: Request, db: Session = Depends(get_db), current_user: 
 def new_loan_post(
     request: Request,
     client_id: int = Form(...),
-    monto_principal: float = Form(...),
+    monto_principal: Decimal = Form(...),
     moneda: str = Form(...),
-    porcentaje_interes: float = Form(...),
+    porcentaje_interes: Decimal = Form(...),
     frecuencia: str = Form("mensual"),
     cuotas: int = Form(1),
     fecha_inicio: str = Form(None),
@@ -1140,10 +1146,10 @@ def capital_settings_get(request: Request, current_user: User = Depends(require_
 
 @app.post("/settings/capital")
 def capital_settings_post(
-    capital_usd: float = Form(None), 
-    capital_ves: float = Form(None), 
-    ajuste_usd: float = Form(0.0),
-    ajuste_ves: float = Form(0.0),
+    capital_usd: Decimal = Form(None), 
+    capital_ves: Decimal = Form(None), 
+    ajuste_usd: Decimal = Form(Decimal("0.0")),
+    ajuste_ves: Decimal = Form(Decimal("0.0")),
     db: Session = Depends(get_db), 
     current_user: User = Depends(require_user)
 ):
@@ -1259,9 +1265,9 @@ def notifications_read_all(db: Session = Depends(get_db), current_user: User = D
 @app.post("/loans/{loan_id}/pay")
 def register_payment(
     loan_id: int,
-    monto: float = Form(...),
+    monto: Decimal = Form(...),
     moneda_pago: str = Form("USD"),
-    tasa_pago: float = Form(None),
+    tasa_pago: Decimal = Form(None),
     tipo: str = Form("pago_cuota"),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_user)
@@ -1369,14 +1375,17 @@ def reports_dashboard(request: Request, db: Session = Depends(get_db), current_u
 
     prestamos_vencidos: int = sum(1 for l in active_loans if utils.chequear_cuota_vencida(l))
     total_activos: int = len(active_loans)
-    capital_prestado_usd: float = sum(max(0.0, l.monto_principal - sum(t.monto for t in l.transactions if t.tipo == 'pago_cuota')) for l in active_loans)
-
-    ganancias_proyectadas: float = sum(
-        utils.calcular_interes_simple(l.monto_principal, l.porcentaje_interes) * (l.cuotas_totales or 1)
+    capital_prestado_usd: Decimal = sum(
+        max(Decimal("0.0"), l.monto_principal - sum(t.monto for t in l.transactions if t.tipo == 'pago_cuota')) 
         for l in active_loans
     )
 
-    ganancias_reales: float = 0.0
+    ganancias_proyectadas: Decimal = sum(
+        utils.calcular_interes_simple(l.monto_principal, l.porcentaje_interes) * Decimal(str(l.cuotas_totales or 1))
+        for l in active_loans
+    )
+
+    ganancias_reales: Decimal = Decimal("0.0")
     all_user_loans = db.query(Loan).join(Client).filter(Client.user_id == user.id).all()
     for l in all_user_loans:
         pagos_usd = sum(t.monto for t in l.transactions if t.tipo == 'pago_cuota')
@@ -1385,8 +1394,8 @@ def reports_dashboard(request: Request, db: Session = Depends(get_db), current_u
 
     unread_count = db.query(Notification).filter(Notification.user_id == user.id, Notification.leida == False).count()
 
-    disponible_usd = user.capital_total_usd
-    disponible_ves = user.capital_total_ves
+    disponible_usd: Decimal = user.capital_total_usd
+    disponible_ves: Decimal = user.capital_total_ves
 
     meses_labels = []
     meses_valores = []
@@ -1406,15 +1415,15 @@ def reports_dashboard(request: Request, db: Session = Depends(get_db), current_u
             end = datetime(target_y + 1, 1, 1)
         else:
             end = datetime(target_y, target_m + 1, 1)
-        sum_mes: float = db.query(func.sum(Transaction.monto)).join(Loan).join(Client).filter(
+        sum_mes: Decimal = db.query(func.sum(Transaction.monto)).join(Loan).join(Client).filter(
             Client.user_id == user.id,
             Transaction.tipo == 'pago_cuota',
             Transaction.fecha >= start,
             Transaction.fecha < end
-        ).scalar() or 0.0
+        ).scalar() or Decimal("0.0")
         meses_valores.append(sum_mes)
 
-    max_val: float = max(meses_valores) if meses_valores and max(meses_valores) > 0 else 1.0
+    max_val: Decimal = max(meses_valores) if meses_valores and max(meses_valores) > Decimal("0.0") else Decimal("1.0")
     grafico_data = [{"label": l, "height": int((v / max_val) * 100)} for l, v in zip(meses_labels, meses_valores)]
 
     loans_activos = []
@@ -1430,11 +1439,11 @@ def reports_dashboard(request: Request, db: Session = Depends(get_db), current_u
             "vencido": utils.chequear_cuota_vencida(l),
         })
 
-    promedio_prestamo: float = (capital_prestado_usd / float(total_activos)) if total_activos > 0 else 0.0
-    recaudacion_total: float = db.query(func.sum(Transaction.monto)).join(Loan).join(Client).filter(
+    promedio_prestamo: Decimal = (capital_prestado_usd / Decimal(str(total_activos))) if total_activos > 0 else Decimal("0.0")
+    recaudacion_total: Decimal = db.query(func.sum(Transaction.monto)).join(Loan).join(Client).filter(
         Client.user_id == user.id,
         Transaction.tipo == 'pago_cuota'
-    ).scalar() or 0.0
+    ).scalar() or Decimal("0.0")
     
     usd_count: int = sum(1 for l in active_loans if l.moneda == 'USD')
     ves_count: int = sum(1 for l in active_loans if l.moneda == 'VES')

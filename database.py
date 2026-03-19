@@ -1,5 +1,5 @@
 import os
-from sqlalchemy import create_engine, Column, Integer, String, Float, ForeignKey, DateTime, Date, Boolean, text
+from sqlalchemy import create_engine, Column, Integer, String, Numeric, ForeignKey, DateTime, Date, Boolean, text
 from sqlalchemy.orm import declarative_base, sessionmaker, relationship
 from datetime import datetime
 import zoneinfo
@@ -33,8 +33,8 @@ class User(Base):
     nombre = Column(String, nullable=True)
     apellido = Column(String, nullable=True)
     hashed_password = Column(String)
-    capital_total_usd = Column(Float, default=0.0)
-    capital_total_ves = Column(Float, default=0.0)
+    capital_total_usd = Column(Numeric(precision=20, scale=4), default=0.0)
+    capital_total_ves = Column(Numeric(precision=20, scale=4), default=0.0)
     created_at = Column(DateTime, default=get_now_vet)
     last_login = Column(DateTime, nullable=True)
     is_active = Column(Boolean, default=True)
@@ -62,18 +62,18 @@ class Rate(Base):
     __tablename__ = "rates"
     id = Column(Integer, primary_key=True, index=True)
     fecha = Column(Date, unique=True, index=True)
-    valor_bs_bcv = Column(Float)
+    valor_bs_bcv = Column(Numeric(precision=20, scale=4))
     updated_at = Column(DateTime, default=get_now_vet, onupdate=get_now_vet)
 
 class Loan(Base):
     __tablename__ = "loans"
     id = Column(Integer, primary_key=True, index=True)
     client_id = Column(Integer, ForeignKey("clients.id"))
-    monto_principal = Column(Float) 
-    monto_original = Column(Float, nullable=True) 
+    monto_principal = Column(Numeric(precision=20, scale=4)) 
+    monto_original = Column(Numeric(precision=20, scale=4), nullable=True) 
     moneda = Column(String) # 'USD' o 'VES'
-    tasa_bcv_snapshot = Column(Float)
-    porcentaje_interes = Column(Float)
+    tasa_bcv_snapshot = Column(Numeric(precision=20, scale=4))
+    porcentaje_interes = Column(Numeric(precision=20, scale=4))
     frecuencia_pagos = Column(String, default="mensual") 
     cuotas_totales = Column(Integer, default=1)
     fecha_inicio = Column(Date, default=lambda: get_now_vet().date())
@@ -102,8 +102,8 @@ class Transaction(Base):
     id = Column(Integer, primary_key=True, index=True)
     loan_id = Column(Integer, ForeignKey("loans.id"))
     tipo = Column(String) 
-    monto = Column(Float) 
-    monto_real = Column(Float, nullable=True) 
+    monto = Column(Numeric(precision=20, scale=4)) 
+    monto_real = Column(Numeric(precision=20, scale=4), nullable=True) 
     moneda = Column(String, default="USD") 
     fecha = Column(DateTime, default=get_now_vet)
     
@@ -114,7 +114,7 @@ class CapitalTransaction(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"))
     tipo = Column(String) 
-    monto = Column(Float)
+    monto = Column(Numeric(precision=20, scale=4))
     moneda = Column(String, default="USD") 
     fecha = Column(DateTime, default=get_now_vet)
     

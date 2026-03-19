@@ -1,7 +1,8 @@
 from database import Loan, Transaction, get_now_vet
+from decimal import Decimal
 
-def calcular_interes_simple(monto: float, porcentaje: float) -> float:
-    return monto * (porcentaje / 100.0)
+def calcular_interes_simple(monto: Decimal, porcentaje: Decimal) -> Decimal:
+    return monto * (porcentaje / Decimal("100.0"))
 
 
 

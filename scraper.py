@@ -2,6 +2,7 @@ import requests
 from datetime import date
 from sqlalchemy.orm import Session
 from database import Rate, SessionLocal
+from decimal import Decimal
 
 # Cache simple en memoria (dura hasta que el servidor se reinicia)
 _rate_cache = {
@@ -11,7 +12,7 @@ _rate_cache = {
 
 # Tasa de emergencia absoluta (si no hay internet ni registros en DB)
 # Se usa para evitar ZeroDivisionError en el arranque inicial o fallos masivos.
-DEFAULT_FALLBACK_RATE = 36.5 
+DEFAULT_FALLBACK_RATE = Decimal("36.5") 
 
 def get_rate_from_dolarapi() -> float:
     """
@@ -28,7 +29,7 @@ def get_rate_from_dolarapi() -> float:
         promedio = data.get("promedio")
         if promedio and promedio > 0:
             print(f"RATE: Tasa obtenida de DolarApi.com: {promedio}")
-            return float(promedio)
+            return Decimal(str(promedio))
         return None
     except Exception as e:
         print(f"RATE: Error en DolarApi.com: {e}")
@@ -56,7 +57,7 @@ def get_rate_from_bcv_scrape() -> float:
         if dolar_div:
             valor_text = dolar_div.find('strong').text.strip()
             valor_limpio = valor_text.replace('.', '').replace(',', '.')
-            rate = float(valor_limpio)
+            rate = Decimal(valor_limpio)
             print(f"RATE: Tasa obtenida de BCV scrape: {rate}")
             return rate
         return None
@@ -65,7 +66,7 @@ def get_rate_from_bcv_scrape() -> float:
         return None
 
 
-def update_bcv_rate_if_needed(db: Session = None) -> float:
+def update_bcv_rate_if_needed(db: Session = None) -> Decimal:
     """
     Obtiene y persiste la tasa del dólar del día.
     Estrategia:
