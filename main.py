@@ -306,15 +306,9 @@ def needs_rehash(hashed: str) -> bool:
     except (IndexError, ValueError):
         return False
 
-# Crear tablas en caso de no existir e informar estatus
-try:
-    init_db()
-    print("🚀 MELO FINANCE PRO v2.4 - DASHBOARD ADMINISTRATIVO ACTIVO")
-    import sys
-    sys.stdout.flush() 
-except Exception as e:
-    print(f"DATABASE ERROR: Falló la inicialización - {e}")
-    sys.stdout.flush()
+# No llamar a init_db() globalmente. Se maneja en el startup_event o mediante Alembic.
+print("🚀 MELO FINANCE PRO v2.4 - DASHBOARD ADMINISTRATIVO CARGADO")
+sys.stdout.flush()
 
 app = FastAPI(title="Melo Préstamos - Bimoneda", description="App de gestión de préstamos USD/VES", version="1.0.0")
 
@@ -382,7 +376,14 @@ def calculate_interest(loan: Loan) -> float:
 @app.on_event("startup")
 def startup_event():
     db = next(get_db())
-    update_bcv_rate_if_needed(db)
+    try:
+        # init_db() # Descomentar solo si no se usa Alembic para crear tablas
+        update_bcv_rate_if_needed(db)
+        print("🚀 STARTUP: Sistema inicializado correctamente.")
+    except Exception as e:
+        print(f"🚀 STARTUP ERROR: {e}")
+    finally:
+        sys.stdout.flush()
 
 def get_current_user(request: Request, db: Session = Depends(get_db)):
     token = request.cookies.get("session_token")
