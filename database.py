@@ -1,14 +1,40 @@
+from datetime import datetime, timezone, timedelta
+
+# Zona horaria de Venezuela (UTC-4, sin ajuste de horario de verano)
+VET = timezone(timedelta(hours=-4))
+
+
+def get_now_utc() -> datetime:
+    """
+    Retorna el datetime actual en UTC, con información de zona horaria.
+    Usar esto para TODOS los timestamps almacenados en la base de datos.
+    """
+    return datetime.now(timezone.utc)
+
+
+def get_now_vet() -> datetime:
+    """
+    Retorna el datetime actual en zona Venezuela (VET = UTC-4).
+    SOLO usar para presentación. No almacenar en BD.
+    Mantener por compatibilidad con código existente que lo llama.
+    """
+    return datetime.now(VET)
+
+
+def utc_to_vet(dt: datetime) -> datetime:
+    """
+    Convierte un datetime UTC a Venezuela. Útil en templates o reportes.
+    Si el datetime es naive (sin zona), asume UTC.
+    """
+    if dt is None:
+        return None
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(VET)
+
 import os
 from sqlalchemy import create_engine, Column, Integer, String, Numeric, ForeignKey, DateTime, Date, Boolean, text
 from sqlalchemy.orm import declarative_base, sessionmaker, relationship
-from datetime import datetime
-import zoneinfo
-
-def get_now_vet():
-    # Retorna la hora local en Venezuela (VET) sin información de zona (naive)
-    return datetime.now(zoneinfo.ZoneInfo("America/Caracas")).replace(tzinfo=None)
-
-# URL de la base de datos (Usa variable de entorno para la nube o SQLite local por defecto)
 DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite:///./loans.db")
 
 # Si la URL empieza con postgres:// (como en Render/Neon), cambiarla a postgresql:// para SQLAlchemy
@@ -35,8 +61,8 @@ class User(Base):
     hashed_password = Column(String)
     capital_total_usd = Column(Numeric(precision=20, scale=4), default=0.0)
     capital_total_ves = Column(Numeric(precision=20, scale=4), default=0.0)
-    created_at = Column(DateTime, default=get_now_vet)
-    last_login = Column(DateTime, nullable=True)
+    created_at = Column(DateTime(timezone=True), default=get_now_utc)
+    last_login = Column(DateTime(timezone=True), nullable=True)
     is_active = Column(Boolean, default=True)
     is_admin = Column(Boolean, default=False)
     webauthn_id = Column(String, unique=True, nullable=True) # Unico para cada usuario
@@ -52,8 +78,8 @@ class Client(Base):
     telefono = Column(String)
     cedula = Column(String, nullable=True)
     direccion = Column(String)
-    created_at = Column(DateTime, default=get_now_vet)
-    updated_at = Column(DateTime, default=get_now_vet, onupdate=get_now_vet)
+    created_at = Column(DateTime(timezone=True), default=get_now_utc)
+    updated_at = Column(DateTime(timezone=True), default=get_now_utc, onupdate=get_now_utc)
     
     user = relationship("User", backref="clients")
     loans = relationship("Loan", back_populates="client")
@@ -63,7 +89,7 @@ class Rate(Base):
     id = Column(Integer, primary_key=True, index=True)
     fecha = Column(Date, unique=True, index=True)
     valor_bs_bcv = Column(Numeric(precision=20, scale=4))
-    updated_at = Column(DateTime, default=get_now_vet, onupdate=get_now_vet)
+    updated_at = Column(DateTime(timezone=True), default=get_now_utc, onupdate=get_now_utc)
 
 class Loan(Base):
     __tablename__ = "loans"
@@ -80,8 +106,8 @@ class Loan(Base):
     fecha_vencimiento = Column(Date, nullable=True)
     estatus = Column(String, default="activo") 
     notas = Column(String, nullable=True)
-    fecha_creacion = Column(DateTime, default=get_now_vet)
-    updated_at = Column(DateTime, default=get_now_vet, onupdate=get_now_vet)
+    fecha_creacion = Column(DateTime(timezone=True), default=get_now_utc)
+    updated_at = Column(DateTime(timezone=True), default=get_now_utc, onupdate=get_now_utc)
     
     client = relationship("Client", back_populates="loans")
     transactions = relationship("Transaction", back_populates="loan")
@@ -93,7 +119,7 @@ class LoanAttachment(Base):
     loan_id = Column(Integer, ForeignKey("loans.id"))
     file_path = Column(String)
     file_size = Column(Integer, default=0) # Tamaño en bytes
-    created_at = Column(DateTime, default=get_now_vet)
+    created_at = Column(DateTime(timezone=True), default=get_now_utc)
     
     loan = relationship("Loan", back_populates="attachments")
 
@@ -105,7 +131,7 @@ class Transaction(Base):
     monto = Column(Numeric(precision=20, scale=4)) 
     monto_real = Column(Numeric(precision=20, scale=4), nullable=True) 
     moneda = Column(String, default="USD") 
-    fecha = Column(DateTime, default=get_now_vet)
+    fecha = Column(DateTime(timezone=True), default=get_now_utc)
     
     loan = relationship("Loan", back_populates="transactions")
 
@@ -116,7 +142,7 @@ class CapitalTransaction(Base):
     tipo = Column(String) 
     monto = Column(Numeric(precision=20, scale=4))
     moneda = Column(String, default="USD") 
-    fecha = Column(DateTime, default=get_now_vet)
+    fecha = Column(DateTime(timezone=True), default=get_now_utc)
     
     user = relationship("User", backref="capital_transactions")
 
@@ -126,7 +152,7 @@ class Notification(Base):
     user_id = Column(Integer, ForeignKey("users.id"))
     titulo = Column(String)
     mensaje = Column(String)
-    fecha = Column(DateTime, default=get_now_vet)
+    fecha = Column(DateTime(timezone=True), default=get_now_utc)
     tipo = Column(String, default="info") 
     leida = Column(Boolean, default=False)
     
@@ -148,7 +174,7 @@ class SupportRequest(Base):
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String)
     token = Column(String)
-    fecha = Column(DateTime, default=get_now_vet)
+    fecha = Column(DateTime(timezone=True), default=get_now_utc)
     atendida = Column(Boolean, default=False)
 
 class PushSubscription(Base):
@@ -159,44 +185,22 @@ class PushSubscription(Base):
     auth_key = Column(String)
     p256dh_key = Column(String)
     browser = Column(String, nullable=True) # Para saber si es iPhone, Chrome, etc
-    created_at = Column(DateTime, default=get_now_vet)
+    created_at = Column(DateTime(timezone=True), default=get_now_utc)
     
     user = relationship("User", back_populates="push_subscriptions")
 
 def init_db():
+    """
+    Crea las tablas si no existen (solo para desarrollo inicial).
+    En producción, las migraciones se manejan con Alembic:
+        alembic upgrade head
+    """
     if os.environ.get("RESET_DATABASE") == "true":
         print("DATABASE: Reseteando base de datos (RESET_DATABASE=true)...")
         Base.metadata.drop_all(bind=engine)
-    Base.metadata.create_all(bind=engine)
     
-    # Migración RADICAL para columnas nuevas si la tabla ya existe
-    with engine.begin() as conn: # engine.begin maneja automáticamente la transacción (COMMIT)
-        print("🛠️ MIGRACION RADICAL v2.4 INICIADA...")
-        
-        # Inyectar is_active en users
-        try:
-            conn.execute(text("ALTER TABLE users ADD COLUMN is_active BOOLEAN DEFAULT TRUE"))
-            print("DATABASE: ✅ Columna 'is_active' inyectada en 'users'.")
-        except Exception as e:
-            # Capturar el texto completo del error para verlo en Railway
-            print(f"DATABASE ERROR DETECTED (User.is_active): {str(e)[:100]}")
-            
-        # Inyectar is_admin en users
-        try:
-            conn.execute(text("ALTER TABLE users ADD COLUMN is_admin BOOLEAN DEFAULT FALSE"))
-            print("DATABASE: ✅ Columna 'is_admin' inyectada en 'users'.")
-        except Exception as e:
-            pass
-            
-        # Inyectar file_size en loan_attachments
-        try:
-            conn.execute(text("ALTER TABLE loan_attachments ADD COLUMN file_size INTEGER DEFAULT 0"))
-            print("DATABASE: ✅ Columna 'file_size' inyectada.")
-        except Exception:
-            pass
-            
-        import sys
-        sys.stdout.flush() 
+    Base.metadata.create_all(bind=engine)
+    print("DATABASE: Schema verificado correctamente.")
 
 def get_db():
     db = SessionLocal()

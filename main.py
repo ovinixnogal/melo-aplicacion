@@ -5,16 +5,18 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 import os
 import shutil
-from typing import List
+from typing import List, Optional
+import secrets
 import bcrypt
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 from decimal import Decimal, ROUND_HALF_UP, InvalidOperation
 
-from database import engine, Base, get_db, init_db, User, Client, Loan, Transaction, Rate, CapitalTransaction, Notification, LoanAttachment, WebAuthnCredential, PushSubscription, SupportRequest
+from database import engine, Base, get_db, init_db, get_now_vet, get_now_utc, utc_to_vet, User, Client, Loan, Transaction, Rate, CapitalTransaction, Notification, LoanAttachment, WebAuthnCredential, PushSubscription, SupportRequest
 import schemas
 from scraper import update_bcv_rate_if_needed
 import utils
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
+from dateutil.relativedelta import relativedelta
 from sqlalchemy import func
 from sqlalchemy.orm import joinedload
 import sys
@@ -65,11 +67,64 @@ else:
     print("STORAGE WARNING: Credenciales S3 faltantes. Guardando en almacenamiento local efímero.")
 
 # --- Seguridad ---
-_SECRET_KEY_FALLBACK = "melo-finance-secret-key-change-in-production"
-SECRET_KEY = os.environ.get("MELO_SECRET_KEY", _SECRET_KEY_FALLBACK)
-if SECRET_KEY == _SECRET_KEY_FALLBACK and os.environ.get("RAILWAY_ENVIRONMENT") == "production":
-    print("WARNING: Using default SECRET_KEY in production! Set MELO_SECRET_KEY for safety.")
+import secrets as py_secrets
+import sys
 
+# ── Configuración de clave secreta ────────────────────────────────────────────
+
+_IS_PRODUCTION = os.environ.get("RAILWAY_ENVIRONMENT") == "production"
+
+def _load_secret_key() -> str:
+    """
+    Carga la clave secreta de forma segura.
+    
+    Entornos:
+    - Producción (RAILWAY_ENVIRONMENT=production): MELO_SECRET_KEY obligatoria.
+      Si no está definida, la aplicación NO arranca.
+    - Desarrollo local: Si no está definida, genera una clave aleatoria segura
+      (las sesiones se invalidan en cada reinicio — aceptable en desarrollo).
+    
+    Para generar una clave segura:
+        python -c "import secrets; print(secrets.token_hex(32))"
+    """
+    key = os.environ.get("MELO_SECRET_KEY")
+    
+    if key:
+        if len(key) < 32:
+            print(
+                "SECURITY WARNING: MELO_SECRET_KEY tiene menos de 32 caracteres. "
+                "Genera una clave más larga con: python -c \"import secrets; print(secrets.token_hex(32))\""
+            )
+        return key
+    
+    if _IS_PRODUCTION:
+        # En producción, fallar explícitamente. No hay fallback.
+        print(
+            "\n" + "="*60 + "\n"
+            "ERROR CRÍTICO: MELO_SECRET_KEY no está configurada.\n"
+            "La aplicación no puede arrancar en producción sin una clave secreta.\n\n"
+            "Para configurarla en Railway:\n"
+            "  1. Ve a tu proyecto en Railway\n"
+            "  2. Variables → New Variable\n"
+            "  3. Name: MELO_SECRET_KEY\n"
+            "  4. Value: (ejecuta esto para generarla)\n"
+            "     python -c \"import secrets; print(secrets.token_hex(32))\"\n"
+            + "="*60 + "\n",
+            file=sys.stderr
+        )
+        sys.exit(1)  # Falla el proceso. Railway no desplegará.
+    
+    # Desarrollo: clave aleatoria por sesión (insegura pero funcional para desarrollo)
+    dev_key = py_secrets.token_hex(32)
+    print(
+        "SECURITY WARNING: MELO_SECRET_KEY no configurada. "
+        "Usando clave temporal (sesiones se invalidan al reiniciar). "
+        "Para persistencia en desarrollo, define MELO_SECRET_KEY en tu .env"
+    )
+    return dev_key
+
+
+SECRET_KEY = _load_secret_key()
 signer = URLSafeTimedSerializer(SECRET_KEY)
 
 # --- Configuración WebAuthn (Biometría) ---
@@ -114,45 +169,141 @@ def verify_csrf_token(token: str, request: Request) -> bool:
 
 # Rate Limiter Simple (En memoria para la Beta)
 import time
-from typing import Dict, List, Any
+import json
+from typing import Dict, List, Optional
 
-_login_attempts: Dict[str, List[float]] = {}
+# ── Rate Limiter con Redis o fallback en memoria ──────────────────────────────
 
-def check_rate_limit(ip: str) -> bool:
+_redis_client = None
+_login_attempts_memory: Dict[str, List[float]] = {}
+
+
+def _get_redis():
+    """
+    Intenta conectar a Redis. Retorna el cliente o None si no está disponible.
+    Cachea el resultado para no intentar reconectar en cada request.
+    """
+    global _redis_client
+    if _redis_client is not None:
+        return _redis_client
+    
+    redis_url = os.environ.get("REDIS_URL")
+    if not redis_url:
+        return None
+    
+    try:
+        import redis
+        client = redis.from_url(redis_url, socket_connect_timeout=2, socket_timeout=2)
+        client.ping()  # Verificar conectividad
+        _redis_client = client
+        print("RATE LIMITER: Usando Redis como backend.")
+        return _redis_client
+    except Exception as e:
+        print(f"RATE LIMITER WARNING: Redis no disponible ({e}). Usando memoria.")
+        return None
+
+
+def check_rate_limit(ip: str, max_attempts: int = 5, window_seconds: int = 60) -> bool:
+    """
+    Verifica si una IP puede hacer un intento de login.
+    
+    Retorna True si el intento está permitido, False si debe ser bloqueado.
+    
+    Estrategia:
+    - Con Redis: sliding window usando ZADD/ZREMRANGEBYSCORE (preciso y eficiente)
+    - Sin Redis: lista en memoria (solo para desarrollo)
+    
+    El bloqueo es por IP. No por usuario, para evitar DoS de cuentas específicas.
+    """
     now = time.time()
+    key = f"rate_limit:login:{ip}"
     
-    # Limpiar IPs viejas si el diccionario crece demasiado para evitar fuga de memoria
-    if len(_login_attempts) > 1000:
-        keys_to_delete = []
-        for k, v in _login_attempts.items():
-            if not [t for t in v if now - t < 60]:
-                keys_to_delete.append(k)
-        for k in keys_to_delete:
-            del _login_attempts[k]
-        if len(_login_attempts) > 2000:
-            _login_attempts.clear()
-
-    attempts = _login_attempts.get(ip, [])
-    attempts = [t for t in attempts if now - t < 60]
-    _login_attempts[ip] = attempts
+    redis = _get_redis()
     
-    if len(attempts) >= 5:
+    if redis:
+        try:
+            pipe = redis.pipeline()
+            # Sliding window: agregar timestamp actual
+            pipe.zadd(key, {str(now): now})
+            # Remover entradas fuera de la ventana
+            pipe.zremrangebyscore(key, 0, now - window_seconds)
+            # Contar intentos en la ventana
+            pipe.zcard(key)
+            # Expirar la clave completa después de la ventana
+            pipe.expire(key, window_seconds + 10)
+            results = pipe.execute()
+            attempt_count = results[2]
+            return attempt_count <= max_attempts
+        except Exception as e:
+            print(f"RATE LIMITER ERROR (Redis): {e}. Fallback a memoria.")
+            # Si Redis falla en runtime, caer a memoria
+    
+    # Fallback: memoria (solo desarrollo o si Redis falla)
+    attempts = _login_attempts_memory.get(ip, [])
+    attempts = [t for t in attempts if now - t < window_seconds]
+    
+    # Limpiar IPs inactivas si el dict crece demasiado
+    if len(_login_attempts_memory) > 1000:
+        cutoff = now - window_seconds
+        keys_to_delete = [
+            k for k, v in _login_attempts_memory.items()
+            if not any(t > cutoff for t in v)
+        ]
+        for k in keys_to_delete[:500]:  # Limpiar hasta 500 a la vez
+            del _login_attempts_memory[k]
+    
+    if len(attempts) >= max_attempts:
+        _login_attempts_memory[ip] = attempts
         return False
-    _login_attempts[ip].append(now)
+    
+    attempts.append(now)
+    _login_attempts_memory[ip] = attempts
     return True
 
 def hash_password(password: str) -> str:
+    """
+    Hashea una contraseña usando bcrypt con cost factor 12.
+    Trunca a 72 bytes (límite de bcrypt) antes de hashear.
+    """
+    if not password:
+        raise ValueError("La contraseña no puede estar vacía")
     pwd_bytes = password.encode('utf-8')[:72]
-    salt = bcrypt.gensalt()
+    salt = bcrypt.gensalt(rounds=12)
     return bcrypt.hashpw(pwd_bytes, salt).decode('utf-8')
 
+
 def verify_password(plain: str, hashed: str) -> bool:
+    """
+    Verifica una contraseña contra su hash bcrypt.
+    NUNCA compara texto plano. Si el hash no es bcrypt válido,
+    retorna False para forzar reset de contraseña.
+    """
+    if not plain or not hashed:
+        return False
     if not hashed.startswith("$2b$"):
-        return plain == hashed
+        # Hash inválido o legacy: rechazar siempre.
+        # El usuario deberá usar "Olvidé mi contraseña" para regenerar.
+        return False
     plain_bytes = plain.encode('utf-8')[:72]
     try:
         return bcrypt.checkpw(plain_bytes, hashed.encode('utf-8'))
-    except ValueError:
+    except (ValueError, Exception):
+        return False
+
+
+def needs_rehash(hashed: str) -> bool:
+    """
+    Retorna True si el hash debe ser actualizado al cost factor actual (12).
+    Útil para actualizar hashes creados con cost factors anteriores.
+    """
+    if not hashed.startswith("$2b$"):
+        return False  # No es bcrypt, no se puede rehashear automáticamente
+    try:
+        # Extrae el cost factor del hash: $2b$12$... -> 12
+        parts = hashed.split("$")
+        current_cost = int(parts[2]) if len(parts) > 2 else 0
+        return current_cost < 12
+    except (IndexError, ValueError):
         return False
 
 # Crear tablas en caso de no existir e informar estatus
@@ -162,10 +313,8 @@ try:
     import sys
     sys.stdout.flush() 
 except Exception as e:
-    print(f"DATABASE ERROR: Falló el inicio de la base de datos: {e}")
-    sys.stdout.flush()
-except Exception as e:
     print(f"DATABASE ERROR: Falló la inicialización - {e}")
+    sys.stdout.flush()
 
 app = FastAPI(title="Melo Préstamos - Bimoneda", description="App de gestión de préstamos USD/VES", version="1.0.0")
 
@@ -199,6 +348,27 @@ def format_currency(value):
         return value
 
 templates.env.filters["format_currency"] = format_currency
+
+
+def format_datetime_vet(dt):
+    """Convierte UTC a Venezuela para mostrar en templates"""
+    if dt is None:
+        return "—"
+    vet_dt = utc_to_vet(dt)
+    return vet_dt.strftime('%d/%m/%Y %H:%M')
+
+
+def format_date_vet(dt):
+    if dt is None:
+        return "—"
+    if hasattr(dt, 'date'):
+        vet_dt = utc_to_vet(dt)
+        return vet_dt.strftime('%d/%m/%Y')
+    return dt.strftime('%d/%m/%Y')
+
+
+templates.env.filters["format_datetime"] = format_datetime_vet
+templates.env.filters["format_date"] = format_date_vet
 
 # --- Helpers ---
 def crear_alerta(db: Session, user_id: int, titulo: str, mensaje: str, tipo: str = "info"):
@@ -341,7 +511,7 @@ async def webauthn_login_verify(request: Request, db: Session = Depends(get_db))
         )
         
         db_cred.sign_count = authentication_verification.new_sign_count
-        user.last_login = datetime.utcnow()
+        user.last_login = get_now_vet()
         db.commit()
         
         token = signer.dumps(user.id)
@@ -438,13 +608,15 @@ def login_post(
         return RedirectResponse(url="/login?error=too_many_requests", status_code=status.HTTP_303_SEE_OTHER)
 
     user = db.query(User).filter(User.username == email).first()
+    # Verificación sin texto plano
     if not user or not verify_password(password, user.hashed_password):
         return RedirectResponse(url="/login?error=1", status_code=status.HTTP_303_SEE_OTHER)
     
     if not user.is_active:
         return RedirectResponse(url="/login?error=account_blocked", status_code=status.HTTP_303_SEE_OTHER)
     
-    if not user.hashed_password.startswith("$2b$"):
+    # Rehash transparente si el cost factor es bajo (sin texto plano)
+    if needs_rehash(user.hashed_password):
         user.hashed_password = hash_password(password)
         db.commit()
     
@@ -698,26 +870,14 @@ def dashboard(request: Request, db: Session = Depends(get_db), current_user: Use
     disponible_usd: Decimal = user.capital_total_usd
     disponible_ves: Decimal = user.capital_total_ves
 
-    meses_labels = []
-    meses_valores = []
-    meses_nombres = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
-    hoy = datetime.utcnow()
-    current_month = datetime(hoy.year, hoy.month, 1)
-    
+    hoy = datetime.now(timezone.utc)
     for i in range(6, -1, -1):
-        target_m = current_month.month - i - 1
-        target_y = current_month.year + (target_m // 12)
-        target_m = (target_m % 12) + 1
-        
-        mes_label = meses_nombres[target_m - 1]
+        target_date = hoy.replace(day=1) - relativedelta(months=i)
+        start = target_date.replace(hour=0, minute=0, second=0, microsecond=0)
+        end = (start + relativedelta(months=1))
+        mes_label = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"][start.month - 1]
         meses_labels.append(mes_label)
-        
-        start = datetime(target_y, target_m, 1)
-        if target_m == 12:
-            end = datetime(target_y + 1, 1, 1)
-        else:
-            end = datetime(target_y, target_m + 1, 1)
-            
+
         sum_mes: Decimal = db.query(func.sum(Transaction.monto)).join(Loan).join(Client).filter(
             Client.user_id == user.id,
             Transaction.tipo == 'pago_cuota',
@@ -898,19 +1058,7 @@ def new_client_post(
     db.commit()
     return RedirectResponse(url="/clients", status_code=status.HTTP_303_SEE_OTHER)
 
-@app.post("/clients/", response_model=schemas.ClientResponse)
-def clients_post(client: schemas.ClientCreate, db: Session = Depends(get_db), current_user: User = Depends(require_user)):
-    db_client = Client(
-        nombre=client.nombre,
-        cedula=client.cedula or "",
-        telefono=client.telefono or "",
-        direccion=client.direccion or "",
-        user_id=current_user.id
-    )
-    db.add(db_client)
-    db.commit()
-    db.refresh(db_client)
-    return db_client
+
 
 @app.get("/clients/{client_id}", response_class=HTMLResponse)
 def client_detail(request: Request, client_id: int, db: Session = Depends(get_db), current_user: User = Depends(require_user)):
@@ -990,10 +1138,10 @@ def new_loan_post(
         return RedirectResponse(url="/loans/new?error=capital_insuficiente", status_code=status.HTTP_303_SEE_OTHER)
 
     try:
-        start_date = datetime.strptime(fecha_inicio, "%Y-%m-%d").date() if fecha_inicio else datetime.utcnow().date()
+        start_date = datetime.strptime(fecha_inicio, "%Y-%m-%d").date() if fecha_inicio else get_now_vet().date()
         end_date = datetime.strptime(fecha_fin, "%Y-%m-%d").date() if fecha_fin else None
     except:
-        start_date = datetime.utcnow().date()
+        start_date = get_now_vet().date()
         end_date = None
 
     monto_base_db = monto_principal / tasa if moneda == "VES" else monto_principal
@@ -1333,17 +1481,33 @@ def register_payment(
     return RedirectResponse(url="/loans", status_code=status.HTTP_303_SEE_OTHER)
 
 @app.post("/clients/", response_model=schemas.ClientResponse)
-def create_client(
+def create_client_api(
     request: Request,
-    client: schemas.ClientCreate, 
-    db: Session = Depends(get_db), 
+    client: schemas.ClientCreate,
+    db: Session = Depends(get_db),
     current_user: User = Depends(require_user)
 ):
+    """
+    API endpoint para crear clientes via JSON (usado por el modal de registro rápido).
+    Requiere header X-CSRF-Token válido.
+    Diferente de POST /clients/new que procesa formulario HTML con campo csrf_token.
+    """
     csrf_token = request.headers.get("X-CSRF-Token")
     if not csrf_token or not verify_csrf_token(csrf_token, request):
         raise HTTPException(status_code=403, detail="CSRF Token inválido")
-        
-    db_client = Client(**client.model_dump(), user_id=current_user.id)
+    
+    # Validar que el nombre no esté vacío después de strip
+    nombre = client.nombre.strip()
+    if not nombre:
+        raise HTTPException(status_code=422, detail="El nombre del cliente es requerido")
+    
+    db_client = Client(
+        nombre=nombre,
+        cedula=client.cedula.strip() if client.cedula else "",
+        telefono=client.telefono.strip() if client.telefono else "",
+        direccion=client.direccion.strip() if client.direccion else "",
+        user_id=current_user.id
+    )
     db.add(db_client)
     db.commit()
     db.refresh(db_client)
@@ -1398,24 +1562,14 @@ def reports_dashboard(request: Request, db: Session = Depends(get_db), current_u
     disponible_usd: Decimal = user.capital_total_usd
     disponible_ves: Decimal = user.capital_total_ves
 
-    meses_labels = []
-    meses_valores = []
-    meses_nombres = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
-    hoy = datetime.utcnow()
-    current_month = datetime(hoy.year, hoy.month, 1)
-
+    hoy = datetime.now(timezone.utc)
     for i in range(6, -1, -1):
-        target_m = current_month.month - i - 1
-        target_y = current_month.year + (target_m // 12)
-        target_m = (target_m % 12) + 1
-        
-        mes_label = meses_nombres[target_m - 1]
+        target_date = hoy.replace(day=1) - relativedelta(months=i)
+        start = target_date.replace(hour=0, minute=0, second=0, microsecond=0)
+        end = (start + relativedelta(months=1))
+        mes_label = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"][start.month - 1]
         meses_labels.append(mes_label)
-        start = datetime(target_y, target_m, 1)
-        if target_m == 12:
-            end = datetime(target_y + 1, 1, 1)
-        else:
-            end = datetime(target_y, target_m + 1, 1)
+
         sum_mes: Decimal = db.query(func.sum(Transaction.monto)).join(Loan).join(Client).filter(
             Client.user_id == user.id,
             Transaction.tipo == 'pago_cuota',
