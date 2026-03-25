@@ -1,564 +1,196 @@
-<!DOCTYPE html>
-<html lang="es">
+{% extends "base.html" %}
 
-<head>
-    <meta charset="utf-8" />
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Melo Finance">
-    <meta name="theme-color" content="#043dae">
-    <meta name="viewport"
-        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <link rel="manifest" href="/static/manifest.json">
-    <link rel="apple-touch-icon" href="/static/icon.png">
-    <title>Melo Finance - Mi Perfil</title>
-    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=block"
-        rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=block"
-        rel="stylesheet" />
-    <script id="tailwind-config">
-        tailwind.config = {
-            darkMode: "class",
-            theme: {
-                extend: {
-                    colors: {
-                        "primary": "#043dae",
-                        "background-light": "#f5f6f8",
-                        "background-dark": "#0f1623",
-                    },
-                    fontFamily: { "display": ["Manrope", "sans-serif"] },
-                },
-            },
-        }
-    </script>
-    <style>
-        body {
-            font-family: 'Outfit', sans-serif;
-            overscroll-behavior-y: contain;
-        }
+{% block title %}Melo Finance - Mi Perfil{% endblock %}
 
-        .material-symbols-outlined {
-            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-        }
+{% set active_page = 'settings' %}
 
-        /* Prevención de parpadeo de modo oscuro */
-        :root {
-            --bg-light: #f5f6f8;
-            --bg-dark: #0f1623;
-        }
-
-        /* Skeleton System */
-        .shimmer {
-            background: linear-gradient(
-                90deg,
-                rgba(255, 255, 255, 0) 0%,
-                rgba(255, 255, 255, 0.4) 50%,
-                rgba(255, 255, 255, 0) 100%
-            );
-            background-size: 200% 100%;
-            animation: shimmer-anim 1.5s infinite linear;
-        }
-
-        .dark .shimmer {
-            background: linear-gradient(
-                90deg,
-                rgba(15, 22, 35, 0) 0%,
-                rgba(255, 255, 255, 0.05) 50%,
-                rgba(15, 22, 35, 0) 100%
-            );
-            background-size: 200% 100%;
-        }
-
-        @keyframes shimmer-anim {
-            0% { background-position: -200% 0; }
-            100% { background-position: 200% 0; }
-        }
-
-        .skeleton-item {
-            background: #eef1f5;
-            border-radius: 1rem;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .dark .skeleton-item {
-            background: #1e293b;
-        }
-
-        #preloader {
-            position: fixed;
-            inset: 0;
-            z-index: 99999;
-            background: #ffffff;
-            display: flex;
-            flex-direction: column;
-            transition: opacity 0.5s ease-in-out, visibility 0.5s;
-        }
-
-        .dark #preloader {
-            background: #0f1623;
-        }
-
-        #preloader.loaded {
-            opacity: 0;
-            visibility: hidden;
-        }
-    </style>
-    <script src="/static/darkMode.js"></script>
-</head>
-
-<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen">
-    <!-- Preloader & Skeleton -->
-    <div id="preloader">
-        <div class="w-full max-w-5xl mx-auto h-full overflow-hidden">
-            <div class="flex items-center justify-between p-4 border-b border-slate-100 dark:border-slate-800">
-                <div class="skeleton-item shimmer size-10 rounded-full"></div>
-                <div class="skeleton-item shimmer h-8 w-40"></div>
-                <div class="skeleton-item shimmer size-10 rounded-full"></div>
+{% block content %}
+<div class="px-6 py-10 space-y-12 animate-in fade-in slide-in-from-bottom-6 duration-700">
+    
+    <!-- Profile Hero -->
+    <section class="flex flex-col items-center text-center space-y-6">
+        <div class="relative group">
+            <div class="size-32 md:size-44 rounded-[3rem] bg-primary/10 flex items-center justify-center ring-8 ring-primary/5 group-hover:scale-105 transition-transform duration-500 shadow-inner">
+                <i class="material-icons text-primary text-6xl md:text-8xl">person</i>
             </div>
-            <div class="flex flex-col items-center py-12">
-                <div class="skeleton-item shimmer w-40 h-40 rounded-[3rem]"></div>
-                <div class="skeleton-item shimmer h-12 w-64 mt-8 rounded-xl"></div>
-                <div class="skeleton-item shimmer h-6 w-32 mt-2 rounded-lg"></div>
-            </div>
-            <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div class="skeleton-item shimmer h-64 w-full rounded-[2rem]"></div>
-                <div class="skeleton-item shimmer h-64 w-full rounded-[2rem]"></div>
+            <div class="absolute -bottom-2 -right-2 flex items-center justify-center size-10 md:size-12 bg-primary rounded-2xl border-4 border-white dark:border-slate-900 text-white shadow-xl">
+                <i class="material-icons text-sm md:text-lg">edit</i>
             </div>
         </div>
-    </div>
-
-    <!-- Sidebar Overlay -->
-    <div id="sidebar-overlay" onclick="toggleSidebar()"
-        class="fixed inset-0 bg-black/50 z-[90] hidden backdrop-blur-sm transition-opacity"></div>
-
-    <!-- Sidebar / Drawer -->
-    <div id="sidebar"
-        class="fixed top-0 left-0 bottom-0 w-64 bg-white dark:bg-slate-900 z-[100] -translate-x-full transition-transform duration-300 ease-in-out border-r border-slate-200 dark:border-slate-800 flex flex-col">
-        <div class="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-            <h2 class="text-xl font-black text-primary italic">Melo <span
-                    class="text-slate-900 dark:text-white not-italic">Finance</span></h2>
-            <span
-                class="bg-primary text-white text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-tighter">BETA</span>
-            <button onclick="toggleSidebar()" class="text-slate-400 hover:text-slate-900 dark:hover:text-white">
-                <span class="material-symbols-outlined">close</span>
-            </button>
+        
+        <div>
+            <h2 class="text-3xl md:text-5xl font-black text-slate-900 dark:text-white tracking-tight leading-none capitalize">
+                {{ user.nombre or 'Usuario' }} {{ user.apellido or '' }}
+            </h2>
+            <p class="text-xs md:text-sm font-black text-slate-400 uppercase tracking-[0.3em] mt-3 italic">
+                @{{ user.username }}
+            </p>
         </div>
-        <nav class="flex-1 p-4 space-y-2">
-            <a href="/dashboard"
-                class="flex items-center gap-3 p-3 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-                <span class="material-symbols-outlined">dashboard</span> Dashboard
-            </a>
-            <a href="/clients"
-                class="flex items-center gap-3 p-3 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-                <span class="material-symbols-outlined">group</span> Clientes
-            </a>
-            <a href="/loans"
-                class="flex items-center gap-3 p-3 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-                <span class="material-symbols-outlined">account_balance_wallet</span> Préstamos
-            </a>
-            <a href="/history/loans"
-                class="flex items-center gap-3 p-3 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-                <span class="material-symbols-outlined">history</span> Historial
-            </a>
-            <a href="/settings/profile"
-                class="flex items-center gap-3 p-3 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-                <span class="material-symbols-outlined">settings</span> Ajustes
-            </a>
-        </nav>
-        <div class="p-4 border-t border-slate-100 dark:border-slate-800">
-            <a href="/logout"
-                class="flex items-center gap-3 p-3 rounded-xl text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors font-bold">
-                <span class="material-symbols-outlined">logout</span> Cerrar Sesión
-            </a>
+    </section>
+
+    <!-- Settings Grid -->
+    <section class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        
+        <!-- Personal Info Form -->
+        <div class="space-y-4">
+            <div class="flex items-center gap-3 px-4">
+                <i class="material-icons text-primary">person_outline</i>
+                <h3 class="text-xs font-black text-slate-900 dark:text-white uppercase tracking-widest">Información Personal</h3>
+            </div>
+            
+            <div class="bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-sm">
+                <form method="POST" action="/settings/profile" class="space-y-6">
+                    <div class="space-y-4">
+                        <div class="space-y-1.5">
+                            <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Nombre</label>
+                            <input name="nombre" type="text" value="{{ user.nombre or '' }}"
+                                class="w-full h-14 px-5 rounded-2xl bg-slate-50 dark:bg-slate-800 border-none focus:ring-4 focus:ring-primary/10 text-slate-900 dark:text-white font-bold transition-all">
+                        </div>
+                        <div class="space-y-1.5">
+                            <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Apellido</label>
+                            <input name="apellido" type="text" value="{{ user.apellido or '' }}"
+                                class="w-full h-14 px-5 rounded-2xl bg-slate-50 dark:bg-slate-800 border-none focus:ring-4 focus:ring-primary/10 text-slate-900 dark:text-white font-bold transition-all">
+                        </div>
+                        <div class="space-y-1.5">
+                            <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Contraseña Nueva</label>
+                            <input name="password" type="password" placeholder="••••••••"
+                                class="w-full h-14 px-5 rounded-2xl bg-slate-50 dark:bg-slate-800 border-none focus:ring-4 focus:ring-primary/10 text-slate-900 dark:text-white font-bold transition-all">
+                        </div>
+                    </div>
+                    <button type="submit" class="w-full h-14 bg-primary text-white rounded-2xl font-black uppercase tracking-widest shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all mt-4">
+                        Actualizar Perfil
+                    </button>
+                </form>
+            </div>
         </div>
-    </div>
-    <div
-        class="relative flex min-h-screen w-full flex-col max-w-5xl mx-auto bg-white dark:bg-slate-900 md:shadow-2xl md:border-x border-slate-200 dark:border-slate-800">
-        <!-- Header Section -->
-        <header
-            class="flex items-center justify-between p-4 sticky top-0 z-30 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-100 dark:border-slate-800">
-            <button onclick="toggleSidebar()"
-                class="text-slate-900 dark:text-slate-100 flex size-10 shrink-0 items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors">
-                <span class="material-symbols-outlined">menu</span>
-            </button>
-            <div class="flex-1 flex flex-col items-center">
-                <h2
-                    class="text-primary italic font-black text-2xl md:text-3xl tracking-tight leading-none pointer-events-none">
-                    Melo
-                    <span class="text-slate-900 dark:text-white not-italic">Finance</span>
-                </h2>
-                <p class="text-[10px] md:text-sm text-slate-400 uppercase font-black tracking-[0.2em] mt-1">Perfil y
-                    Configuración</p>
-            </div>
-            <div class="flex items-center gap-2">
-                <a href="/notifications"
-                    class="flex size-10 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-primary transition-colors relative">
-                    <span class="material-symbols-outlined">notifications</span>
-                    {% if unread_count > 0 %}
-                    <span
-                        class="absolute top-2 right-2 w-4 h-4 bg-red-500 rounded-full border border-white dark:border-slate-900 text-[10px] text-white font-bold flex items-center justify-center">{{
-                        unread_count }}</span>
-                    {% endif %}
-                </a>
-            </div>
-        </header>
 
-        <main class="flex-1 p-4 md:p-8 space-y-8">
-            <!-- Profile Overview -->
-            <div class="flex flex-col items-center py-6 md:py-12">
-                <div class="relative group">
-                    <div
-                        class="w-28 h-28 md:w-40 md:h-40 bg-primary/10 rounded-[2.5rem] md:rounded-[3rem] flex items-center justify-center ring-8 ring-primary/5 group-hover:scale-105 transition-transform duration-500">
-                        <span class="material-symbols-outlined text-primary text-6xl md:text-8xl">person</span>
-                    </div>
-                    <div
-                        class="absolute -bottom-2 -right-2 flex items-center justify-center size-10 md:size-12 bg-primary rounded-full border-4 border-white dark:border-slate-900 text-white shadow-xl">
-                        <span class="material-symbols-outlined text-sm md:text-lg">edit</span>
-                    </div>
+        <!-- Security & Extras -->
+        <div class="space-y-8">
+            <!-- Biometry Card -->
+            <div class="space-y-4">
+                <div class="flex items-center gap-3 px-4">
+                    <i class="material-icons text-primary">fingerprint</i>
+                    <h3 class="text-xs font-black text-slate-900 dark:text-white uppercase tracking-widest">Seguridad Avanzada</h3>
                 </div>
-                <h2 class="text-3xl md:text-5xl font-black text-slate-900 dark:text-white mt-8 tracking-tight">{{
-                    user.nombre or 'Usuario' }} {{
-                    user.apellido or '' }}</h2>
-                <p class="text-sm md:text-lg font-bold text-slate-400 uppercase tracking-[0.2em] mt-2 italic">{{
-                    user.username }}</p>
-            </div>
-
-            <!-- Sections Container -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pb-20">
-                <!-- 1. Perfil Section -->
-                <div class="space-y-4">
-                    <div class="flex items-center gap-2 px-2">
-                        <span class="material-symbols-outlined text-primary text-lg">person_edit</span>
-                        <h3 class="font-black text-slate-900 dark:text-white text-sm uppercase tracking-wider">Perfil
-                            Personal</h3>
-                    </div>
-
-                    <div
-                        class="bg-white dark:bg-slate-800/40 rounded-[2rem] p-6 border border-slate-100 dark:border-slate-800 shadow-sm space-y-5">
-                        <form method="POST" action="/settings/profile" class="space-y-4">
-                            <div class="space-y-1.5">
-                                <label
-                                    class="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Nombre</label>
-                                <input name="nombre" type="text" value="{{ user.nombre or '' }}"
-                                    class="w-full h-12 px-4 rounded-xl bg-slate-50 dark:bg-slate-900/50 border-none focus:ring-2 focus:ring-primary text-slate-900 dark:text-white font-bold placeholder-slate-300"
-                                    autocomplete="given-name">
-                            </div>
-                            <div class="space-y-1.5">
-                                <label
-                                    class="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Apellido</label>
-                                <input name="apellido" type="text" value="{{ user.apellido or '' }}"
-                                    class="w-full h-12 px-4 rounded-xl bg-slate-50 dark:bg-slate-900/50 border-none focus:ring-2 focus:ring-primary text-slate-900 dark:text-white font-bold placeholder-slate-300"
-                                    autocomplete="family-name">
-                            </div>
-                            <div class="space-y-1.5">
-                                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Nueva
-                                    Contraseña</label>
-                                <input name="password" type="password" placeholder="••••••••"
-                                    class="w-full h-12 px-4 rounded-xl bg-slate-50 dark:bg-slate-900/50 border-none focus:ring-2 focus:ring-primary text-slate-900 dark:text-white font-bold placeholder-slate-300"
-                                    autocomplete="new-password">
-                            </div>
-                            <button type="submit"
-                                class="w-full h-12 bg-primary text-white rounded-xl font-bold hover:shadow-lg hover:shadow-primary/20 transition-all active:scale-[0.98]">
-                                Guardar Perfil
-                            </button>
-                        </form>
-                    </div>
-                </div>
-
-                <!-- 2. Capital Section -->
-                <div class="space-y-4">
-                    <div class="flex items-center gap-2 px-2">
-                        <span class="material-symbols-outlined text-primary text-lg">account_balance</span>
-                        <h3 class="font-black text-slate-900 dark:text-white text-sm uppercase tracking-wider">Gestión
-                            Financiera</h3>
-                    </div>
-
-                    <form method="POST" action="/settings/capital" class="space-y-4">
-                        <div class="grid grid-cols-2 gap-4">
-                            <div class="space-y-1.5">
-                                <label
-                                    class="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Capital
-                                    USD (Total)</label>
-                                <div class="relative">
-                                    <span
-                                        class="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-primary text-sm">$</span>
-                                    <input name="capital_usd" type="number" step="0.01"
-                                        value="{{ user.capital_total_usd }}"
-                                        class="w-full h-11 pl-7 px-3 rounded-xl bg-slate-50 dark:bg-slate-900/50 border-none focus:ring-2 focus:ring-primary text-slate-900 dark:text-white font-black text-sm">
-                                </div>
-                            </div>
-                            <div class="space-y-1.5">
-                                <label
-                                    class="text-[10px] font-bold text-primary uppercase tracking-wider ml-1">Abonar/Retirar
-                                </label>
-                                <div class="relative">
-                                    <input name="ajuste_usd" type="number" step="0.01" value="0"
-                                        class="w-full h-11 px-3 rounded-xl bg-primary/5 border-none focus:ring-2 focus:ring-primary text-primary font-black text-sm"
-                                        placeholder="+/- 0.00">
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-4">
-                            <div class="space-y-1.5">
-                                <label
-                                    class="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Capital
-                                    VES (Total)</label>
-                                <div class="relative">
-                                    <span
-                                        class="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-primary text-xs">Bs</span>
-                                    <input name="capital_ves" type="number" step="0.01"
-                                        value="{{ user.capital_total_ves }}"
-                                        class="w-full h-11 pl-8 px-3 rounded-xl bg-slate-50 dark:bg-slate-900/50 border-none focus:ring-2 focus:ring-primary text-slate-900 dark:text-white font-black text-sm">
-                                </div>
-                            </div>
-                            <div class="space-y-1.5">
-                                <label
-                                    class="text-[10px] font-bold text-primary uppercase tracking-wider ml-1">Abonar/Retirar
-                                </label>
-                                <div class="relative">
-                                    <input name="ajuste_ves" type="number" step="0.01" value="0"
-                                        class="w-full h-11 px-3 rounded-xl bg-primary/5 border-none focus:ring-2 focus:ring-primary text-primary font-black text-sm"
-                                        placeholder="+/- 0.00">
-                                </div>
-                            </div>
-                        </div>
-
-                        <button type="submit"
-                            class="w-full h-12 bg-primary text-white rounded-xl font-bold hover:shadow-lg hover:shadow-primary/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2">
-                            <span class="material-symbols-outlined text-sm">account_balance_wallet</span>
-                            Actualizar Fondos
-                        </button>
-                    </form>
-                </div>
-
-                <!-- 3. Biometría Section (Nivel Competitivo) -->
-                <div class="space-y-4">
-                    <div class="flex items-center gap-2 px-2">
-                        <span class="material-symbols-outlined text-primary text-lg">fingerprint</span>
-                        <h3 class="font-black text-slate-900 dark:text-white text-sm uppercase tracking-wider">Seguridad
-                            Biométrica</h3>
-                    </div>
-
-                    <div
-                        class="bg-white dark:bg-slate-800/40 rounded-[2rem] p-6 border border-slate-100 dark:border-slate-800 shadow-sm space-y-4 text-center">
-                        <div class="p-4 bg-primary/5 rounded-2xl">
-                            <span class="material-symbols-outlined text-4xl text-primary mb-2">faceid</span>
-                            <p class="text-xs text-slate-500 font-medium leading-relaxed">Activa FaceID o Huella para
-                                entrar a tu cuenta sin contraseñas.</p>
-                        </div>
-                        <button onclick="registerBiometrics()" id="btn-biometric"
-                            class="w-full h-12 bg-slate-900 dark:bg-white dark:text-slate-900 text-white rounded-xl font-bold hover:shadow-lg transition-all active:scale-[0.98] flex items-center justify-center gap-2">
-                            <span class="material-symbols-outlined text-sm">add_moderator</span>
-                            Vincular este dispositivo
-                        </button>
-                    </div>
-                </div>
-
-                <!-- 4. Notificaciones Section (Nivel Competitivo) -->
-                <div class="space-y-4">
-                    <div class="flex items-center gap-2 px-2">
-                        <span class="material-symbols-outlined text-primary text-lg">notifications_active</span>
-                        <h3 class="font-black text-slate-900 dark:text-white text-sm uppercase tracking-wider">Avisos
-                            y Alertas</h3>
-                    </div>
-
-                    <div
-                        class="bg-white dark:bg-slate-800/40 rounded-[2rem] p-6 border border-slate-100 dark:border-slate-800 shadow-sm space-y-4 text-center">
-                        <div class="p-4 bg-primary/5 rounded-2xl">
-                            <span
-                                class="material-symbols-outlined text-4xl text-primary mb-2">notifications_paused</span>
-                            <p class="text-xs text-slate-500 font-medium leading-relaxed">Recibe alertas al instante
-                                sobre
-                                pagos recibidos y vencimientos.</p>
-                        </div>
-                        <button onclick="subscribeToPush()" id="btn-push"
-                            class="w-full h-12 border-2 border-primary text-primary rounded-xl font-bold hover:bg-primary/5 transition-all active:scale-[0.98] flex items-center justify-center gap-2">
-                            <span class="material-symbols-outlined text-sm">notifications</span>
-                            Activar Notificaciones
-                        </button>
-                    </div>
+                <div class="bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-sm text-center">
+                    <i class="material-icons text-5xl text-primary/20 mb-4">face</i>
+                    <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wide leading-relaxed mb-6">Activa el acceso biométrico para entrar a tu cuenta sin usar contraseñas manualmente.</p>
+                    <button onclick="registerBiometrics()" id="btn-biometric" class="w-full h-14 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl font-black uppercase tracking-widest transition-all hover:shadow-xl flex items-center justify-center gap-2">
+                        <i class="material-icons text-sm">add_moderator</i> Vincular Dispositivo
+                    </button>
                 </div>
             </div>
-    </div>
 
-    <!-- Danger Zone -->
-    <div class="w-full pt-4">
-        <a href="/logout"
-            class="flex items-center justify-center gap-2 p-4 w-full bg-red-500/5 text-red-500 rounded-2xl font-bold text-sm border border-red-500/10 hover:bg-red-500/10 transition-all">
-            <span class="material-symbols-outlined text-lg">logout</span>
-            Cerrar Sesión Activa
+            <!-- Notifications Card -->
+            <div class="space-y-4">
+                <div class="flex items-center gap-3 px-4">
+                    <i class="material-icons text-primary">notifications_active</i>
+                    <h3 class="text-xs font-black text-slate-900 dark:text-white uppercase tracking-widest">Alertas</h3>
+                </div>
+                <div class="bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-sm text-center">
+                    <i class="material-icons text-5xl text-primary/20 mb-4">phonelink_ring</i>
+                    <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wide leading-relaxed mb-6">Recibe avisos sobre pagos de clientes y estados financieros al instante.</p>
+                    <button onclick="subscribeToPush()" id="btn-push" class="w-full h-14 border-2 border-primary text-primary rounded-2xl font-black uppercase tracking-widest hover:bg-primary/5 transition-all flex items-center justify-center gap-2">
+                        <i class="material-icons text-sm">notifications</i> Activar Push
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Logout Area -->
+    <div class="pt-12 text-center pb-20">
+        <a href="/logout" class="inline-flex items-center gap-3 text-red-500 font-black uppercase tracking-[0.2em] text-xs hover:bg-red-50 dark:hover:bg-red-500/10 px-8 py-4 rounded-2xl transition-all border border-red-100 dark:border-red-500/20">
+            <i class="material-icons">logout</i> Cerrar Sesión Segura
         </a>
     </div>
-    </main>
-    </div>
 
-    <div class="h-24"></div>
-    </div>
-    <div
-        class="fixed bottom-0 md:bottom-6 left-0 right-0 flex max-w-md md:max-w-3xl lg:max-w-5xl mx-auto gap-2 border-t md:border border-slate-200 dark:border-slate-700 md:rounded-3xl md:shadow-2xl bg-white/90 dark:bg-slate-900/90 backdrop-blur-md px-4 pb-6 pt-2 md:py-2 z-50 transition-all">
-        <a class="flex flex-1 md:flex-row flex-col items-center justify-center gap-2 md:gap-3 text-slate-400 dark:text-slate-500 hover:text-primary transition-colors md:hover:bg-primary/5 md:py-3 md:rounded-xl"
-            href="/dashboard">
-            <span class="material-symbols-outlined">dashboard</span>
-            <p class="text-[10px] md:text-sm font-medium leading-normal tracking-tight">Dashboard</p>
-        </a>
-        <a class="flex flex-1 md:flex-row flex-col items-center justify-center gap-2 md:gap-3 text-slate-400 dark:text-slate-500 hover:text-primary transition-colors md:hover:bg-primary/5 md:py-3 md:rounded-xl"
-            href="/clients">
-            <span class="material-symbols-outlined">group</span>
-            <p class="text-[10px] md:text-sm font-medium leading-normal tracking-tight">Clientes</p>
-        </a>
-        <a class="flex flex-1 md:flex-row flex-col items-center justify-center gap-2 md:gap-3 text-slate-400 dark:text-slate-500 hover:text-primary transition-colors md:hover:bg-primary/5 md:py-3 md:rounded-xl"
-            href="/loans">
-            <span class="material-symbols-outlined">account_balance_wallet</span>
-            <p class="text-[10px] md:text-sm font-medium leading-normal tracking-tight">Préstamos</p>
-        </a>
-        <a class="flex flex-1 md:flex-row flex-col items-center justify-center gap-2 md:gap-3 text-slate-400 dark:text-slate-500 hover:text-primary transition-colors md:hover:bg-primary/5 md:py-3 md:rounded-xl"
-            href="/reports">
-            <span class="material-symbols-outlined">analytics</span>
-            <p class="text-[10px] md:text-sm font-medium leading-normal tracking-tight">Reportes</p>
-        </a>
-    </div>
-    <script>
-        function toggleSidebar() {
-            const sidebar = document.getElementById('sidebar');
-            const overlay = document.getElementById('sidebar-overlay');
-            sidebar.classList.toggle('-translate-x-full');
-            overlay.classList.toggle('hidden');
-        }
+</div>
+{% endblock %}
 
-        // Hide Preloader/Skeleton
-        window.addEventListener('load', function() {
-            const preloader = document.getElementById('preloader');
-            if (preloader) {
-                setTimeout(() => {
-                    preloader.classList.add('loaded');
-                }, 1000);
-            }
-        });
-        // --- Lógica WebAuthn (Biometría) ---
-        async function registerBiometrics() {
-            const btn = document.getElementById('btn-biometric');
-            btn.disabled = true;
-            btn.innerHTML = '<span class="animate-spin material-symbols-outlined">sync</span> Registrando...';
+{% block scripts_extra %}
+<script>
+    // --- Lógica WebAuthn (Biometría) ---
+    async function registerBiometrics() {
+        const btn = document.getElementById('btn-biometric');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="material-icons animate-spin">sync</i> Registrando...';
 
-            try {
-                // 1. Obtener opciones del servidor
-                const optionsRes = await fetch('/auth/webauthn/register/options');
-                const options = await optionsRes.json();
+        try {
+            const optionsRes = await fetch('/auth/webauthn/register/options');
+            const options = await optionsRes.json();
+            options.challenge = bufferDecode(options.challenge);
+            options.user.id = bufferDecode(options.user.id);
+            if (options.excludeCredentials) options.excludeCredentials.forEach(c => c.id = bufferDecode(c.id));
 
-                // 2. Convertir campos base64 del server a bytes para el navegador
-                options.challenge = bufferDecode(options.challenge);
-                options.user.id = bufferDecode(options.user.id);
-                if (options.excludeCredentials) {
-                    options.excludeCredentials.forEach(c => c.id = bufferDecode(c.id));
+            const credential = await navigator.credentials.create({ publicKey: options });
+            const response = {
+                id: credential.id,
+                rawId: bufferEncode(credential.rawId),
+                type: credential.type,
+                response: {
+                    attestationObject: bufferEncode(credential.response.attestationObject),
+                    clientDataJSON: bufferEncode(credential.response.clientDataJSON)
                 }
+            };
 
-                // 3. Crear credencial en el dispositivo
-                const credential = await navigator.credentials.create({ publicKey: options });
+            const verifyRes = await fetch('/auth/webauthn/register/verify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(response)
+            });
 
-                // 4. Codificar respuesta para enviar al server
-                const rawId = bufferEncode(credential.rawId);
-                const attestationObject = bufferEncode(credential.response.attestationObject);
-                const clientDataJSON = bufferEncode(credential.response.clientDataJSON);
+            if (verifyRes.ok) {
+                alert('¡Dispositivo vinculado con éxito!');
+                btn.className = "w-full h-14 bg-emerald-500 text-white rounded-2xl font-black uppercase tracking-widest flex items-center justify-center gap-2";
+                btn.innerHTML = '<i class="material-icons">check_circle</i> Vinculado';
+            } else { throw new Error(); }
+        } catch (err) {
+            alert('Error al vincular biometría.');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="material-icons text-sm">add_moderator</i> Intentar de nuevo';
+        }
+    }
 
-                const response = {
-                    id: credential.id,
-                    rawId: rawId,
-                    type: credential.type,
-                    response: {
-                        attestationObject: attestationObject,
-                        clientDataJSON: clientDataJSON
-                    }
-                };
+    // --- Lógica Web Push ---
+    async function subscribeToPush() {
+        const btn = document.getElementById('btn-push');
+        const vapidKey = "{{ vapid_public_key or '' }}";
+        if (!vapidKey) return alert("Push no configurado.");
 
-                // 5. Verificar en servidor
-                const verifyRes = await fetch('/auth/webauthn/register/verify', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(response)
-                });
+        try {
+            const permission = await Notification.requestPermission();
+            if (permission !== 'granted') return;
 
-                if (verifyRes.ok) {
-                    alert('¡Dispositivo vinculado con éxito! Ahora puedes entrar con biometría.');
-                    btn.classList.replace('bg-slate-900', 'bg-green-500');
-                    btn.innerHTML = '<span class="material-symbols-outlined">check_circle</span> Dispositivo Vinculado';
-                } else {
-                    throw new Error('La verificación falló');
-                }
-            } catch (err) {
-                console.error(err);
-                alert('No se pudo registrar la biometría. Asegúrate de tener activado el bloqueo de pantalla.');
-                btn.disabled = false;
-                btn.innerHTML = '<span class="material-symbols-outlined">add_moderator</span> Intentar de nuevo';
+            const registration = await navigator.serviceWorker.ready;
+            const subscription = await registration.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: urlBase64ToUint8Array(vapidKey)
+            });
+
+            const res = await fetch('/push/subscribe', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(subscription)
+            });
+
+            if (res.ok) {
+                btn.className = "w-full h-14 bg-emerald-500 text-white rounded-2xl font-black uppercase tracking-widest flex items-center justify-center gap-2";
+                btn.innerHTML = '<i class="material-icons">notifications_active</i> Activo';
             }
-        }
+        } catch (err) { alert('Error al activar notificaciones.'); }
+    }
 
-        // --- Lógica Web Push ---
-        async function subscribeToPush() {
-            const btn = document.getElementById('btn-push');
-            const vapidKey = "{{ vapid_public_key or '' }}";
-
-            if (!vapidKey) {
-                alert("Las notificaciones no están configuradas en el servidor.");
-                return;
-            }
-
-            try {
-                const permission = await Notification.requestPermission();
-                if (permission !== 'granted') {
-                    alert('Permiso denegado. Actívalos en la configuración de tu navegador.');
-                    return;
-                }
-
-                const registration = await navigator.serviceWorker.ready;
-                const subscription = await registration.pushManager.subscribe({
-                    userVisibleOnly: true,
-                    applicationServerKey: urlBase64ToUint8Array(vapidKey)
-                });
-
-                const res = await fetch('/push/subscribe', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(subscription)
-                });
-
-                if (res.ok) {
-                    alert('¡Notificaciones activadas con éxito!');
-                    btn.classList.replace('border-primary', 'bg-green-500');
-                    btn.classList.replace('text-primary', 'text-white');
-                    btn.innerHTML = '<span class="material-symbols-outlined">notifications_active</span> Activas';
-                    // Test
-                    fetch('/push/test');
-                }
-            } catch (err) {
-                console.error(err);
-                alert('Error al suscribir. Puede que tu navegador no soporte push notifications.');
-            }
-        }
-
-        // Utils para WebAuthn
-        function bufferDecode(value) {
-            return Uint8Array.from(atob(value.replace(/-/g, "+").replace(/_/g, "/")), c => c.charCodeAt(0));
-        }
-
-        function bufferEncode(value) {
-            return btoa(String.fromCharCode.apply(null, new Uint8Array(value)))
-                .replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
-        }
-
-        function urlBase64ToUint8Array(base64String) {
-            const padding = '='.repeat((4 - base64String.length % 4) % 4);
-            const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
-            const rawData = window.atob(base64);
-            const outputArray = new Uint8Array(rawData.length);
-            for (let i = 0; i < rawData.length; ++i) {
-                outputArray[i] = rawData.charCodeAt(i);
-            }
-            return outputArray;
-        }
-    </script>
-</body>
-
-</html>
+    // Utils
+    function bufferDecode(v) { return Uint8Array.from(atob(v.replace(/-/g, "+").replace(/_/g, "/")), c => c.charCodeAt(0)); }
+    function bufferEncode(v) { return btoa(String.fromCharCode.apply(null, new Uint8Array(v))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, ""); }
+    function urlBase64ToUint8Array(base64String) {
+        const padding = '='.repeat((4 - base64String.length % 4) % 4);
+        const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+        const rawData = window.atob(base64);
+        const outputArray = new Uint8Array(rawData.length);
+        for (let i = 0; i < rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i);
+        return outputArray;
+    }
+</script>
+{% endblock %}

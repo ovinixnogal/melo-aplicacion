@@ -21,12 +21,37 @@
             theme: {
                 extend: {
                     colors: {
-                        "melo": "#043dae",
-                        "melo-dark": "#032b7c",
+                        "melo": {
+                            DEFAULT: "#043dae",
+                            dark: "#032b7c",
+                            light: "#2563eb",
+                            accent: "#3b82f6"
+                        },
                     },
                     fontFamily: {
                         sans: ["Outfit", "system-ui", "sans-serif"],
                     },
+                    animation: {
+                        'blob': 'blob 10s infinite',
+                        'fade-in': 'fadeIn 0.5s ease-out forwards',
+                        'slide-up': 'slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+                    },
+                    keyframes: {
+                        blob: {
+                            '0%': { transform: 'translate(0px, 0px) scale(1)' },
+                            '33%': { transform: 'translate(30px, -50px) scale(1.1)' },
+                            '66%': { transform: 'translate(-20px, 20px) scale(0.9)' },
+                            '100%': { transform: 'translate(0px, 0px) scale(1)' },
+                        },
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' },
+                        },
+                        slideUp: {
+                            '0%': { transform: 'translateY(20px)', opacity: '0' },
+                            '100%': { transform: 'translateY(0)', opacity: '1' },
+                        }
+                    }
                 },
             },
         }
@@ -35,382 +60,241 @@
         body {
             font-family: 'Outfit', sans-serif;
             -webkit-font-smoothing: antialiased;
-        }
-
-        .material-symbols-outlined {
-            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-        }
-
-        .logo-text {
-            font-size: 2.2rem;
-            font-weight: 800;
-            letter-spacing: -0.02em;
-            line-height: 1;
-        }
-
-        .logo-melo {
-            color: #043dae;
-        }
-
-        .logo-finance {
-            color: #1e293b;
-        }
-
-        .dark .logo-finance {
-            color: #e2e8f0;
-        }
-
-        /* Ola decorativa en la parte inferior */
-        .wave-bg {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: 200px;
-            background: linear-gradient(180deg, transparent 0%, rgba(4, 61, 174, 0.03) 100%);
-            border-radius: 50% 50% 0 0;
-            pointer-events: none;
-        }
-
-        .dark .wave-bg {
-            background: linear-gradient(180deg, transparent 0%, rgba(4, 61, 174, 0.08) 100%);
-        }
-
-        /* Prevención de parpadeo de modo oscuro */
-        :root {
-            --bg-light: #f5f6f8;
-            --bg-dark: #0f1623;
-        }
-
-        /* Skeleton System */
-        .shimmer {
-            background: linear-gradient(
-                90deg,
-                rgba(255, 255, 255, 0) 0%,
-                rgba(255, 255, 255, 0.4) 50%,
-                rgba(255, 255, 255, 0) 100%
-            );
-            background-size: 200% 100%;
-            animation: shimmer-anim 1.5s infinite linear;
-        }
-
-        .dark .shimmer {
-            background: linear-gradient(
-                90deg,
-                rgba(15, 22, 35, 0) 0%,
-                rgba(255, 255, 255, 0.05) 50%,
-                rgba(15, 22, 35, 0) 100%
-            );
-            background-size: 200% 100%;
-        }
-
-        @keyframes shimmer-anim {
-            0% { background-position: -200% 0; }
-            100% { background-position: 200% 0; }
-        }
-
-        .skeleton-item {
-            background: rgba(4, 61, 174, 0.05);
-            border-radius: 2rem;
-            position: relative;
             overflow: hidden;
-        }
-
-        .dark .skeleton-item {
-            background: rgba(255, 255, 255, 0.05);
-        }
-
-        /* Preloader Premium */
-        #preloader {
+            height: 100dvh;
+            width: 100vw;
             position: fixed;
-            inset: 0;
-            z-index: 99999;
-            background: #ffffff;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            transition: opacity 0.5s ease-in-out, visibility 0.5s;
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
         }
 
-        .dark #preloader {
-            background: #0f1623;
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
         }
 
-        #preloader.loaded {
-            opacity: 0;
-            visibility: hidden;
+        .dark .glass-panel {
+            background: rgba(15, 22, 35, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        .loader-content {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 1.5rem;
-        }
-
-        .loader-logo {
-            font-size: 2.5rem;
-            font-weight: 900;
-            letter-spacing: -0.02em;
-            animation: loader-pulse 2s infinite ease-in-out;
-        }
-
-        @keyframes loader-pulse {
-            0%, 100% { transform: scale(1); opacity: 1; filter: blur(0px); }
-            50% { transform: scale(1.05); opacity: 0.7; filter: blur(1px); }
-        }
-
-        .loader-bar {
-            width: 120px;
-            height: 4px;
-            background: rgba(4, 61, 174, 0.1);
-            border-radius: 10px;
-            overflow: hidden;
-            position: relative;
-        }
-
-        .loader-bar::after {
-            content: '';
-            position: absolute;
+        .mesh-gradient {
+            position: fixed;
             top: 0;
             left: 0;
-            height: 100%;
-            width: 50%;
-            background: #043dae;
-            border-radius: 10px;
-            animation: loader-slide 1.5s infinite ease-in-out;
+            right: 0;
+            bottom: 0;
+            z-index: -1;
+            background-color: #f8fafc;
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(4, 61, 174, 0.1) 0px, transparent 50%),
+                radial-gradient(at 100% 0%, rgba(59, 130, 246, 0.1) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(4, 61, 174, 0.05) 0px, transparent 50%),
+                radial-gradient(at 0% 100%, rgba(59, 130, 246, 0.05) 0px, transparent 50%);
         }
 
-        @keyframes loader-slide {
-            0% { left: -50%; }
-            100% { left: 100%; }
+        .dark .mesh-gradient {
+            background-color: #020617;
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(4, 61, 174, 0.2) 0px, transparent 50%),
+                radial-gradient(at 100% 0%, rgba(30, 58, 138, 0.2) 0px, transparent 50%);
         }
+
+        .blob {
+            position: absolute;
+            width: 50vw;
+            height: 50vw;
+            background: rgba(4, 61, 174, 0.12);
+            filter: blur(80px);
+            border-radius: 50%;
+            z-index: -1;
+        }
+
+        input:focus + span.material-symbols-outlined { color: #043dae; }
+
+        /* Hide browser default password reveal button */
+        input::-ms-reveal,
+        input::-ms-clear {
+            display: none;
+        }
+
+        input::-webkit-contacts-auto-fill-button, 
+        input::-webkit-credentials-auto-fill-button {
+            visibility: hidden;
+            display: none !important;
+            pointer-events: none;
+            position: absolute;
+            right: 0;
+        }
+
     </style>
     <script src="/static/darkMode.js"></script>
 </head>
 
-<body class="min-h-screen flex flex-col bg-white dark:bg-black relative overflow-x-hidden">
-    <!-- Preloader & Skeleton -->
-    <div id="preloader">
-        <div class="w-full max-w-md mx-auto p-8 space-y-12">
-            <!-- Branding Skeleton -->
-            <div class="space-y-4">
-                <div class="skeleton-item shimmer h-20 w-full"></div>
-                <div class="skeleton-item shimmer h-6 w-3/4"></div>
-            </div>
-
-            <!-- Form Skeleton -->
-            <div class="space-y-8">
-                <div class="space-y-3">
-                    <div class="skeleton-item shimmer h-4 w-32 ml-4"></div>
-                    <div class="skeleton-item shimmer h-20 w-full"></div>
-                </div>
-                <div class="space-y-3">
-                    <div class="skeleton-item shimmer h-4 w-32 ml-4"></div>
-                    <div class="skeleton-item shimmer h-20 w-full"></div>
-                </div>
-                <div class="skeleton-item shimmer h-20 w-full rounded-[2.5rem]"></div>
-            </div>
-        </div>
+<body class="flex flex-col relative text-slate-900 dark:text-slate-100">
+    <div class="mesh-gradient"></div>
+    <div class="absolute inset-0 overflow-hidden pointer-events-none">
+        <div class="blob left-[-10%] top-[-10%] animate-blob"></div>
+        <div class="blob right-[-5%] bottom-[-5%] animate-blob" style="animation-delay: 2s;"></div>
     </div>
 
-    <div class="absolute top-4 right-4 z-50"> <button type="button" onclick="toggleDarkMode()"
-            class="flex size-10 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-primary transition-colors">
+    <div class="absolute top-4 right-4 md:top-8 md:right-8 z-50">
+        <button type="button" onclick="toggleDarkMode()"
+            class="flex h-12 w-12 items-center justify-center rounded-2xl glass-panel text-slate-600 dark:text-slate-400 hover:text-melo dark:hover:text-melo transition-all hover:scale-110 active:scale-95 shadow-lg">
             <span class="material-symbols-outlined dark:hidden">dark_mode</span>
             <span class="material-symbols-outlined hidden dark:block">light_mode</span>
         </button>
     </div>
-    <!-- Fondo con gradiente dinámico -->
-    <div
-        class="fixed inset-0 bg-gradient-to-br from-melo/10 via-transparent to-transparent dark:from-melo/5 pointer-events-none">
-    </div>
-    <div class="wave-bg"></div>
 
-    <!-- Contenido principal -->
-    <div
-        class="relative flex-1 flex flex-col md:grid md:grid-cols-2 md:items-center max-w-7xl mx-auto w-full px-6 py-8 min-h-screen gap-12">
-
-        <!-- Sección Branding (Izquierda en PC, Superior en Móvil) -->
-        <div class="flex flex-col justify-center md:pr-12">
-            <div class="logo-text text-4xl sm:text-5xl md:text-7xl lg:text-8xl">
-                <span class="logo-melo">Melo</span>
-                <span class="logo-finance">Finance</span>
-            </div>
-            <p
-                class="text-gray-500 dark:text-gray-400 text-lg md:text-2xl lg:text-3xl mt-4 max-w-[300px] md:max-w-md font-medium leading-tight">
-                Gestiona tus préstamos de manera inteligente y profesional
+    <main class="flex-1 flex flex-col md:flex-row items-center justify-center p-6 md:p-12 gap-8 md:gap-16 max-w-7xl mx-auto w-full h-full relative z-10">
+        <div class="flex-1 text-center md:text-left space-y-4 md:space-y-6 animate-fade-in hidden md:block">
+            
+            <h1 class="text-6xl lg:text-8xl font-black tracking-tight leading-none">
+                <span class="text-melo dark:text-melo-accent">Melo</span><br>
+                <span class="text-slate-800 dark:text-white">Finance</span>
+            </h1>
+            <p class="text-xl text-slate-600 dark:text-slate-400 max-w-md font-medium leading-relaxed">
+                Gestiona tus préstamos y calcula tus ganancias en un solo lugar.
             </p>
         </div>
 
-        <!-- Sección Formulario (Derecha en PC, Centro en Móvil) -->
-        <div class="flex flex-col justify-center w-full max-w-md mx-auto md:ml-auto md:mr-0">
-            <form action="/login" method="POST" class="space-y-6 w-full">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                <!-- Error message -->
-                <div id="loginError"
-                    class="hidden items-center gap-3 text-base text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10 p-5 rounded-3xl border border-red-100 dark:border-red-500/20">
-                    <span class="material-symbols-outlined text-[24px]">error</span>
-                    <span class="font-bold">Credenciales inválidas</span>
-                </div>
-                <div id="loginSuccess"
-                    class="hidden items-center gap-3 text-base text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-500/10 p-5 rounded-3xl border border-green-100 dark:border-green-500/20">
-                    <span class="material-symbols-outlined text-[24px]">check_circle</span>
-                    <span class="font-bold">Contraseña actualizada correctamente</span>
-                </div>
-                <script>
-                    const params = new URLSearchParams(window.location.search);
-                    if (params.get('error')) {
-                        document.getElementById('loginError').classList.remove('hidden');
-                        document.getElementById('loginError').classList.add('flex');
-                    }
-                    if (params.get('msg') === 'password_reset_success') {
-                        document.getElementById('loginSuccess').classList.remove('hidden');
-                        document.getElementById('loginSuccess').classList.add('flex');
-                    }
-                    if (params.get('error') === 'account_blocked') {
-                        document.getElementById('loginError').classList.remove('hidden');
-                        document.getElementById('loginError').querySelector('.font-bold').textContent = 'Tu cuenta ha sido suspendida. Contacta al administrador.';
-                        document.getElementById('loginError').classList.add('flex');
-                    }
-                </script>
-
-                <!-- Campo de correo -->
-                <div class="space-y-3">
-                    <label
-                        class="text-base md:text-lg font-bold text-gray-700 dark:text-gray-300 ml-1 uppercase tracking-wider">Correo
-                        electrónico</label>
-                    <div class="relative">
-                        <span
-                            class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-2xl">mail</span>
-                        <input name="email" type="email" required
-                            class="w-full pl-14 pr-4 py-6 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-[2rem] focus:border-melo focus:ring-2 focus:ring-melo/20 transition-all text-lg placeholder:text-gray-400 font-medium dark:text-white"
-                            placeholder="tu@email.com" autocomplete="username email">
-                    </div>
-                </div>
-
-                <!-- Campo de contraseña -->
-                <div class="space-y-3">
-                    <label
-                        class="text-base md:text-lg font-bold text-gray-700 dark:text-gray-300 ml-1 uppercase tracking-wider">Contraseña</label>
-                    <div class="relative">
-                        <span
-                            class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-2xl">lock</span>
-                        <input name="password" type="password" required
-                            class="w-full pl-14 pr-12 py-6 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-[2rem] focus:border-melo focus:ring-2 focus:ring-melo/20 transition-all text-lg placeholder:text-gray-400 font-medium dark:text-white"
-                            placeholder="••••••••" autocomplete="current-password">
-                        <button type="button" onclick="togglePassword(this)"
-                            class="absolute right-6 top-1/2 -translate-y-1/2 text-gray-400 hover:text-melo transition-colors">
-                            <span class="material-symbols-outlined text-2xl">visibility</span>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Enlace de olvido y botón -->
-                <div class="flex justify-end">
-                    <a href="/forgot-password"
-                        class="text-base text-melo hover:text-melo-dark font-bold underline underline-offset-4">¿Olvidaste
-                        tu contraseña?</a>
-                </div>
-
-                <!-- Botón principal -->
-                <button type="submit"
-                    class="w-full bg-melo text-white rounded-[2rem] py-6 font-black text-xl hover:bg-melo-dark active:scale-[0.98] transition-all mt-4 shadow-2xl shadow-melo/30 flex items-center justify-center gap-3">
-                    Entrar ahora
-                    <span class="material-symbols-outlined">arrow_forward</span>
-                </button>
-
-                <!-- Biometric Login (Nivel Competitivo) -->
-                <div id="biometric-area" class="hidden">
-                    <div class="flex items-center gap-4 my-4">
-                        <div class="flex-1 h-px bg-gray-100 dark:bg-gray-800"></div>
-                        <span class="text-xs text-gray-400 font-bold uppercase tracking-widest">O también</span>
-                        <div class="flex-1 h-px bg-gray-100 dark:bg-gray-800"></div>
-                    </div>
-
-                    <button type="button" onclick="loginBiometric()"
-                        class="w-full border-2 border-slate-900 dark:border-white text-slate-900 dark:text-white rounded-[2rem] py-5 font-bold text-lg hover:bg-slate-50 dark:hover:bg-white/5 active:scale-[0.98] transition-all flex items-center justify-center gap-3">
-                        <span class="material-symbols-outlined text-2xl">fingerprint</span>
-                        Usar Biometría
-                    </button>
-                </div>
-            </form>
-
-            <!-- Registro y footer móvil -->
-            <div class="mt-10 space-y-8">
-                <p class="text-center text-lg text-gray-600 dark:text-gray-300">
-                    ¿No tienes cuenta?
-                    <a href="/signup" class="text-melo font-black ml-1">Regístrate gratis</a>
-                </p>
-
-                <div class="flex items-center gap-4">
-                    <div class="flex-1 h-px bg-gray-200 dark:bg-gray-800"></div>
-                    <span class="text-[10px] text-gray-400 dark:text-gray-600 font-black tracking-[0.2em]">SISTEMA MELO
-                        FINANCE</span>
-                    <div class="flex-1 h-px bg-gray-200 dark:bg-gray-800"></div>
-                </div>
-
-                <!-- Badges de confianza -->
-                <div class="flex justify-center gap-6">
-                    <div class="flex items-center gap-2 text-[10px] text-gray-500 font-black uppercase tracking-widest">
-                        <span class="material-symbols-outlined text-[20px] text-melo">verified_user</span>
-                        SSL
-                    </div>
-                    <div class="flex items-center gap-2 text-[10px] text-gray-500 font-black uppercase tracking-widest">
-                        <span class="material-symbols-outlined text-[20px] text-melo">lock_person</span>
-                        Encriptado
-                    </div>
-                </div>
-
-                <p class="text-center text-xs text-gray-400 dark:text-gray-600 font-medium">
-                    © 2026 Melo Finance · Venezuela
-                </p>
+        <div class="w-full max-w-[440px] animate-slide-up flex flex-col justify-center h-full">
+            <div class="md:hidden text-center mb-6">
+                <h1 class="text-4xl font-black tracking-tight">
+                    <span class="text-melo dark:text-melo-accent">Melo</span>
+                    <span class="text-slate-800 dark:text-white">Finance</span>
+                </h1>
             </div>
+
+            <div class="glass-panel p-8 md:p-10 rounded-[2.5rem] shadow-2xl relative overflow-hidden group">
+                <div class="absolute -top-12 -right-12 w-32 h-32 bg-melo/5 rounded-full group-hover:bg-melo/10 transition-all duration-700"></div>
+                
+                <div class="relative z-10">
+                    <div class="mb-8">
+                        <h2 class="text-3xl font-extrabold text-slate-900 dark:text-white mb-2">¡Bienvenido!</h2>
+                        <p class="text-sm text-slate-500 dark:text-slate-400 font-medium">Gestiona tus finanzas en un solo lugar</p>
+                    </div>
+
+                    <form action="/login" method="POST" class="space-y-5">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        
+                        <div id="loginError" class="hidden items-center gap-3 p-3 rounded-2xl bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/20 text-red-600 dark:text-red-400 animate-fade-in">
+                            <span class="material-symbols-outlined text-lg">error</span>
+                            <span class="text-xs font-bold">Credenciales inválidas</span>
+                        </div>
+                        
+                        <div id="loginSuccess" class="hidden items-center gap-3 p-3 rounded-2xl bg-green-50 dark:bg-green-500/10 border border-green-100 dark:border-green-500/20 text-green-600 dark:text-green-400 animate-fade-in">
+                            <span class="material-symbols-outlined text-lg">check_circle</span>
+                            <span class="text-xs font-bold">Hecho</span>
+                        </div>
+
+                        <div class="space-y-4">
+                            <div class="space-y-1.5">
+                                <label class="text-[11px] font-bold text-slate-400 uppercase tracking-widest ml-1">Email</label>
+                                <div class="relative">
+                                    <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 text-xl">mail</span>
+                                    <input name="email" type="email" required
+                                        class="w-full pl-12 pr-4 py-4 bg-white/50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 rounded-2xl focus:border-melo focus:ring-4 focus:ring-melo/10 transition-all outline-none font-medium dark:white text-sm"
+                                        placeholder="usuario@melo.com">
+                                </div>
+                            </div>
+
+                            <div class="space-y-1.5">
+                                <div class="flex justify-between items-center px-1">
+                                    <label class="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Clave</label>
+                                    <a href="/forgot-password" class="text-[11px] font-bold text-melo hover:text-melo-dark">¿Perdiste la clave?</a>
+                                </div>
+                                <div class="relative">
+                                    <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 text-xl">lock</span>
+                                    <input name="password" type="password" required
+                                        class="w-full pl-12 pr-12 py-4 bg-white/50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 rounded-2xl focus:border-melo focus:ring-4 focus:ring-melo/10 transition-all outline-none font-medium dark:white text-sm"
+                                        placeholder="••••••••">
+                                    <button type="button" onclick="togglePassword(this)" 
+                                        class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-melo">
+                                        <span class="material-symbols-outlined text-xl">visibility</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button type="submit"
+                            class="w-full bg-melo hover:bg-melo-dark text-white rounded-2xl py-4 font-bold text-lg shadow-xl shadow-melo/20 active:scale-[0.98] transition-all flex items-center justify-center gap-3 group mt-2">
+                            Entrar
+                            <span class="material-symbols-outlined group-hover:translate-x-1 transition-transform">arrow_forward</span>
+                        </button>
+
+                        <div id="biometric-area" class="hidden">
+                            <button type="button" onclick="loginBiometric()"
+                                class="w-full h-14 border border-slate-200 dark:border-slate-800 bg-white/30 dark:bg-white/5 hover:bg-white/60 dark:hover:bg-white/10 text-slate-700 dark:text-slate-200 rounded-2xl font-bold text-xs transition-all flex items-center justify-center gap-2">
+                                <span class="material-symbols-outlined text-lg text-melo">fingerprint</span>
+                                Acceso biométrico
+                            </button>
+                        </div>
+                    </form>
+
+                    <div class="mt-8 text-center border-t border-slate-100 dark:border-slate-800 pt-6">
+                        <p class="text-sm text-slate-500 dark:text-slate-400">
+                            ¿No estás en el sistema? 
+                            <a href="/signup" class="text-melo dark:text-melo-accent font-bold hover:underline">Regístrate</a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <footer class="mt-6 text-center text-[10px] text-slate-400 dark:text-slate-600 font-bold uppercase tracking-widest md:hidden">
+                © 2026 Melo Finance · Seguro y Encriptado
+            </footer>
         </div>
-    </div>
+
+        <footer class="absolute bottom-8 left-1/2 -translate-x-1/2 text-[10px] text-slate-400 dark:text-slate-600 font-bold uppercase tracking-widest hidden md:block">
+            © 2026 Melo Finance · Plataforma de Gestión de Activos
+        </footer>
+    </main>
 
     <script>
         function togglePassword(btn) {
             const input = btn.previousElementSibling;
             const icon = btn.querySelector('.material-symbols-outlined');
-            const type = input.type === 'password' ? 'text' : 'password';
-            input.type = type;
-            icon.textContent = type === 'password' ? 'visibility' : 'visibility_off';
+            input.type = input.type === 'password' ? 'text' : 'password';
+            icon.textContent = input.type === 'password' ? 'visibility' : 'visibility_off';
         }
 
-        // --- Lógica WebAuthn (Login) ---
-        document.addEventListener('DOMContentLoaded', () => {
-            if (window.PublicKeyCredential) {
-                document.getElementById('biometric-area').classList.remove('hidden');
+        const params = new URLSearchParams(window.location.search);
+        const loginError = document.getElementById('loginError');
+        const loginSuccess = document.getElementById('loginSuccess');
+
+        if (params.get('error')) {
+            loginError.classList.remove('hidden');
+            loginError.classList.add('flex');
+            if (params.get('error') === 'account_blocked') {
+                loginError.querySelector('span:last-child').textContent = 'Cuenta suspendida';
             }
-        });
+        }
+        
+        if (params.get('msg') === 'password_reset_success') {
+            loginSuccess.classList.remove('hidden');
+            loginSuccess.classList.add('flex');
+            loginSuccess.querySelector('span:last-child').textContent = 'Clave actualizada';
+        }
+
+        if (window.PublicKeyCredential) {
+            document.getElementById('biometric-area').classList.remove('hidden');
+        }
 
         async function loginBiometric() {
             const emailInput = document.querySelector('input[name="email"]');
             const username = emailInput.value.trim();
-
-            if (!username) {
-                alert('Por favor, ingresa tu correo primero para usar biometría.');
-                emailInput.focus();
-                return;
-            }
+            if (!username) { alert('Ingresa tu email'); return; }
 
             try {
-                // 1. Obtener opciones de login
                 const optionsRes = await fetch(`/auth/webauthn/login/options?username=${encodeURIComponent(username)}`);
-                if (!optionsRes.ok) {
-                    throw new Error('Este dispositivo no está vinculado a tu cuenta.');
-                }
+                if (!optionsRes.ok) throw new Error('No vinculado');
                 const options = await optionsRes.json();
-
-                // 2. Convertir campos base64 a bytes
                 options.challenge = bufferDecode(options.challenge);
                 options.allowCredentials.forEach(c => c.id = bufferDecode(c.id));
-
-                // 3. Solicitar firma al dispositivo
                 const assertion = await navigator.credentials.get({ publicKey: options });
-
-                // 4. Codificar respuesta
                 const response = {
                     id: assertion.id,
                     rawId: bufferEncode(assertion.rawId),
@@ -422,45 +306,19 @@
                         userHandle: assertion.response.userHandle ? bufferEncode(assertion.response.userHandle) : null
                     }
                 };
-
-                // 5. Verificar en servidor e iniciar sesión
                 const verifyRes = await fetch('/auth/webauthn/login/verify', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(response)
                 });
-
-                if (verifyRes.ok) {
-                    window.location.href = '/dashboard';
-                } else {
-                    const error = await verifyRes.json();
-                    throw new Error(error.detail || 'Fallo la biometría');
-                }
-            } catch (err) {
-                console.error(err);
-                alert(err.message || 'Error al iniciar sesión biométrica.');
-            }
+                if (verifyRes.ok) window.location.href = '/dashboard';
+                else throw new Error('Fallo');
+            } catch (err) { console.error(err); }
         }
 
-        // Utils (Duplicados para independencia de templates)
-        function bufferDecode(value) {
-            return Uint8Array.from(atob(value.replace(/-/g, "+").replace(/_/g, "/")), c => c.charCodeAt(0));
-        }
+        function bufferDecode(value) { return Uint8Array.from(atob(value.replace(/-/g, "+").replace(/_/g, "/")), c => c.charCodeAt(0)); }
+        function bufferEncode(value) { return btoa(String.fromCharCode.apply(null, new Uint8Array(value))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, ""); }
 
-        function bufferEncode(value) {
-            return btoa(String.fromCharCode.apply(null, new Uint8Array(value)))
-                .replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
-        }
-
-        // Hide Preloader
-        window.addEventListener('load', function() {
-            const preloader = document.getElementById('preloader');
-            if (preloader) {
-                setTimeout(() => {
-                    preloader.classList.add('loaded');
-                }, 800);
-            }
-        });
     </script>
 </body>
 

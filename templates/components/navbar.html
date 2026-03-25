@@ -1,0 +1,54 @@
+<div id="bottom-navbar" class="fixed bottom-0 left-0 right-0 z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-t border-slate-200 dark:border-slate-800 pb-safe-area-inset-bottom">
+    <div class="max-w-2xl mx-auto flex justify-around items-center h-16 px-4">
+        <!-- Dashboard -->
+        <a href="/dashboard" class="flex flex-col items-center justify-center flex-1 transition-all duration-300 group {% if active_page == 'dashboard' %}text-primary{% else %}text-slate-400 hover:text-slate-600 dark:hover:text-slate-200{% endif %}">
+            <div class="relative">
+                <i class="material-icons text-2xl {% if active_page == 'dashboard' %}scale-110{% else %}group-hover:scale-110{% endif %} transition-transform">dashboard</i>
+                {% if active_page == 'dashboard' %}
+                <span class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-primary rounded-full"></span>
+                {% endif %}
+            </div>
+            <span class="text-[10px] font-bold mt-1 uppercase tracking-tighter">Resumen</span>
+        </a>
+
+        <!-- Clients -->
+        <a href="/clients" class="flex flex-col items-center justify-center flex-1 transition-all duration-300 group {% if active_page == 'clients' %}text-primary{% else %}text-slate-400 hover:text-slate-600 dark:hover:text-slate-200{% endif %}">
+            <div class="relative">
+                <i class="material-icons text-2xl {% if active_page == 'clients' %}scale-110{% else %}group-hover:scale-110{% endif %} transition-transform">group</i>
+                {% if active_page == 'clients' %}
+                <span class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-primary rounded-full"></span>
+                {% endif %}
+            </div>
+            <span class="text-[10px] font-bold mt-1 uppercase tracking-tighter">Clientes</span>
+        </a>
+
+        <!-- Loans -->
+        <a href="/loans" class="flex flex-col items-center justify-center flex-1 transition-all duration-300 group {% if active_page == 'loans' %}text-primary{% else %}text-slate-400 hover:text-slate-600 dark:hover:text-slate-200{% endif %}">
+            <div class="relative">
+                <i class="material-icons text-2xl {% if active_page == 'loans' %}scale-110{% else %}group-hover:scale-110{% endif %} transition-transform">account_balance_wallet</i>
+                {% if active_page == 'loans' %}
+                <span class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-primary rounded-full"></span>
+                {% endif %}
+            </div>
+            <span class="text-[10px] font-bold mt-1 uppercase tracking-tighter">Préstamos</span>
+        </a>
+
+        <!-- Reports -->
+        <a href="/reports" class="flex flex-col items-center justify-center flex-1 transition-all duration-300 group {% if active_page == 'reports' %}text-primary{% else %}text-slate-400 hover:text-slate-600 dark:hover:text-slate-200{% endif %}">
+            <div class="relative">
+                <i class="material-icons text-2xl {% if active_page == 'reports' %}scale-110{% else %}group-hover:scale-110{% endif %} transition-transform">analytics</i>
+                {% if active_page == 'reports' %}
+                <span class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-primary rounded-full"></span>
+                {% endif %}
+            </div>
+            <span class="text-[10px] font-bold mt-1 uppercase tracking-tighter">Reportes</span>
+        </a>
+    </div>
+</div>
+
+<style>
+    /* Soporte para áreas seguras en dispositivos móviles */
+    .pb-safe-area-inset-bottom {
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+</style>

@@ -1,472 +1,221 @@
-<html lang="es">
+{% extends "base.html" %}
 
-<head>
-    <meta charset="utf-8" />
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Melo Finance">
-    <meta name="theme-color" content="#043dae">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <link rel="manifest" href="/static/manifest.json">
-    <link rel="apple-touch-icon" href="/static/icon.png">
-    <title>Melo Finance - Dashboard</title>
-    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=block" rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=block" rel="stylesheet" />
-    <script id="tailwind-config">
-        tailwind.config = {
-            darkMode: "class",
-            theme: {
-                extend: {
-                    colors: {
-                        "primary": "#043dae",
-                        "background-light": "#f5f6f8",
-                        "background-dark": "#0f1623",
-                    },
-                    fontFamily: {
-                        "display": ["Manrope", "sans-serif"]
-                    },
-                    borderRadius: {
-                        "DEFAULT": "0.5rem",
-                        "lg": "1rem",
-                        "xl": "1.5rem",
-                        "full": "9999px"
-                    },
-                },
-            },
-        }
-    </script>
-    <style>
-        body {
-            font-family: 'Outfit', sans-serif;
-            min-height: 100vh;
-        }
+{% block title %}Melo Finance - Dashboard{% endblock %}
 
-        .material-symbols-outlined {
-            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-        }
+{% set active_page = 'dashboard' %}
 
-        :root {
-            --bg-light: #f5f6f8;
-            --bg-dark: #0f1623;
-        }
+{% block content %}
+<div class="px-6 py-8 space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    
+    <!-- Hero Stats Section -->
+    <section class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Capital Summary (Total) -->
+        <div class="md:col-span-2 p-8 rounded-[2.5rem] bg-primary text-white shadow-2xl shadow-primary/20 relative overflow-hidden group">
+            <div class="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-white/10 rounded-full blur-3xl group-hover:bg-white/20 transition-all duration-700"></div>
+            
+            <div class="relative z-10 flex flex-col h-full justify-between">
+                <div>
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="text-[10px] font-black uppercase tracking-[0.2em] opacity-60">Capital Total Administrado</span>
+                        <span class="size-2 bg-emerald-400 rounded-full animate-pulse shadow-glow shadow-emerald-400"></span>
+                    </div>
+                    <div class="flex flex-wrap items-end gap-x-8 gap-y-4">
+                        <div>
+                            <p class="text-[10px] font-bold text-white/50 uppercase mb-1">Dólares (USD)</p>
+                            <h2 class="text-4xl md:text-5xl font-black tracking-tighter">${{ capital_total_usd|format_currency }}</h2>
+                        </div>
+                        <div class="pb-1">
+                            <p class="text-[10px] font-bold text-white/50 uppercase mb-1">Bolívares (VES)</p>
+                            <h3 class="text-2xl md:text-3xl font-black tracking-tighter">Bs.{{ capital_total_ves|format_currency }}</h3>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-8 flex gap-4 pt-6 border-t border-white/10">
+                    <a href="/settings/capital" class="px-6 py-3 bg-white/10 hover:bg-white/20 rounded-2xl text-xs font-black uppercase tracking-widest transition-all backdrop-blur-md border border-white/10 flex items-center gap-2">
+                        <i class="material-icons text-sm">settings</i> Ajustar Capital
+                    </a>
+                    <a href="/loans/new" class="px-6 py-3 bg-white text-primary hover:bg-slate-100 rounded-2xl text-xs font-black uppercase tracking-widest transition-all shadow-lg flex items-center gap-2">
+                        <i class="material-icons text-sm">add_card</i> Nuevo Préstamo
+                    </a>
+                </div>
+            </div>
+        </div>
 
-        /* Preloader Premium */
-        #preloader {
-            position: fixed;
-            inset: 0;
-            z-index: 99999;
-            background: #ffffff;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            transition: opacity 0.5s ease-in-out, visibility 0.5s;
-        }
+        <!-- Quick Client Stat -->
+        <div class="p-8 rounded-[2.5rem] bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col justify-between">
+            <div>
+                <div class="size-14 rounded-2xl bg-indigo-50 dark:bg-indigo-950/20 text-indigo-500 flex items-center justify-center mb-6">
+                    <i class="material-icons text-3xl">group</i>
+                </div>
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Directorio Activo</p>
+                <h4 class="text-4xl font-black text-slate-900 dark:text-white">{{ total_clientes }}</h4>
+                <p class="text-xs text-slate-500 mt-2 font-medium">Clientes registrados</p>
+            </div>
+            <a href="/clients" class="w-full py-4 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-2xl text-xs font-black text-slate-600 dark:text-slate-300 uppercase tracking-widest transition-all text-center mt-6">
+                Gestionar Clientes
+            </a>
+        </div>
+    </section>
 
-        .dark #preloader {
-            background: #0f1623;
-        }
-
-        #preloader.loaded {
-            opacity: 0;
-            visibility: hidden;
-        }
-
-        .loader-content {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 1.5rem;
-        }
-
-        .loader-logo {
-            font-size: 2.5rem;
-            font-weight: 900;
-            letter-spacing: -0.02em;
-            animation: loader-pulse 2s infinite ease-in-out;
-        }
-
-        @keyframes loader-pulse {
-            0%, 100% { transform: scale(1); opacity: 1; filter: blur(0px); }
-            50% { transform: scale(1.05); opacity: 0.7; filter: blur(1px); }
-        }
-
-        .loader-bar {
-            width: 120px;
-            height: 4px;
-            background: rgba(4, 61, 174, 0.1);
-            border-radius: 10px;
-            overflow: hidden;
-            position: relative;
-        }
-
-        .loader-bar::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            height: 100%;
-            width: 50%;
-            background: #043dae;
-            border-radius: 10px;
-            animation: loader-slide 1.5s infinite ease-in-out;
-        }
-
-        @keyframes loader-slide {
-            0% { left: -50%; }
-            100% { left: 100%; }
-        }
-
-        /* Skeleton System */
-        .shimmer {
-            background: linear-gradient(
-                90deg,
-                rgba(255, 255, 255, 0) 0%,
-                rgba(255, 255, 255, 0.4) 50%,
-                rgba(255, 255, 255, 0) 100%
-            );
-            background-size: 200% 100%;
-            animation: shimmer-anim 1.5s infinite linear;
-        }
-
-        .dark .shimmer {
-            background: linear-gradient(
-                90deg,
-                rgba(15, 22, 35, 0) 0%,
-                rgba(255, 255, 255, 0.05) 50%,
-                rgba(15, 22, 35, 0) 100%
-            );
-            background-size: 200% 100%;
-        }
-
-        @keyframes shimmer-anim {
-            0% { background-position: -200% 0; }
-            100% { background-position: 200% 0; }
-        }
-
-        .skeleton-item {
-            background: #eef1f5;
-            border-radius: 1rem;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .dark .skeleton-item {
-            background: #1e293b;
-        }
-
-        .skeleton-item::after {
-            content: "";
-            position: absolute;
-            inset: 0;
-            background: inherit;
-            background-image: inherit; /* Shimmer will be applied via class */
-        }
-    </style>
-    <script>
-        (function() {
-            const theme = localStorage.getItem('theme');
-            if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-                document.documentElement.classList.add('dark');
-            } else {
-                document.documentElement.classList.remove('dark');
-            }
-        })();
-    </script>
-    <script src="/static/darkMode.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@hotwired/turbo@7.3.0/dist/turbo.es2017-umd.js"></script>
-</head>
-
-<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen">
-    <!-- Preloader & Skeleton Wrapper -->
-    <div id="preloader">
-        <!-- Dashboard Skeleton Shell -->
-        <div class="w-full max-w-5xl mx-auto px-6 py-8 md:py-12 space-y-8 h-full overflow-hidden">
-            <!-- Header Skeleton -->
-            <div class="flex items-center justify-between mb-12">
-                <div class="skeleton-item shimmer h-10 w-40"></div>
-                <div class="flex gap-2">
-                    <div class="skeleton-item shimmer size-10 rounded-full"></div>
-                    <div class="skeleton-item shimmer size-10 rounded-full"></div>
+    <!-- Mid Section: Graph & Next Payments -->
+    <section class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- Activity Chart Card -->
+        <div class="p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-sm">
+            <div class="flex items-center justify-between mb-8">
+                <div>
+                    <h3 class="font-black text-slate-900 dark:text-white text-lg tracking-tight leading-none">Rendimiento Mensual</h3>
+                    <p class="text-xs text-slate-400 mt-1 uppercase font-bold tracking-widest">Ingresos por intereses (USD)</p>
+                </div>
+                <div class="size-10 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-500 flex items-center justify-center rounded-xl">
+                    <i class="material-icons">trending_up</i>
                 </div>
             </div>
             
-            <!-- Welcome Skeleton -->
-            <div class="space-y-4">
-                <div class="skeleton-item shimmer h-12 w-3/4"></div>
-                <div class="skeleton-item shimmer h-6 w-1/2"></div>
+            <div class="h-[300px] w-full relative">
+                <canvas id="activityChart"></canvas>
             </div>
+        </div>
 
-            <!-- Stats Grid Skeleton -->
-            <div class="grid md:grid-cols-2 gap-6">
-                <div class="skeleton-item shimmer h-32 rounded-[2rem]"></div>
-                <div class="skeleton-item shimmer h-44 rounded-[2.5rem]"></div>
-            </div>
-
-            <!-- Dashboard Summary Skeleton -->
-            <div class="space-y-6">
-                <div class="skeleton-item shimmer h-8 w-48"></div>
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div class="skeleton-item shimmer h-40 rounded-3xl"></div>
-                    <div class="skeleton-item shimmer h-40 rounded-3xl"></div>
-                    <div class="skeleton-item shimmer h-40 rounded-3xl"></div>
-                    <div class="skeleton-item shimmer h-40 rounded-3xl"></div>
+        <!-- Next Payments Card -->
+        <div class="p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col">
+            <div class="flex items-center justify-between mb-8">
+                <div>
+                    <h3 class="font-black text-slate-900 dark:text-white text-lg tracking-tight leading-none">Pagos Próximos</h3>
+                    <p class="text-xs text-slate-400 mt-1 uppercase font-bold tracking-widest">Calendario semanal</p>
                 </div>
+                <a href="/loans" class="text-[10px] font-black text-primary uppercase border-b-2 border-primary/20 pb-0.5">Ver Todo</a>
             </div>
 
-            <!-- Bottom Nav Skeleton (Positioned like the real one) -->
-            <div class="fixed bottom-6 left-4 right-4 max-w-lg mx-auto skeleton-item shimmer h-16 rounded-3xl"></div>
-        </div>
-    </div>
-
-    <div id="sidebar-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black/50 z-[90] hidden backdrop-blur-sm transition-opacity"></div>
-
-    <!-- Sidebar / Drawer -->
-    <div id="sidebar-persistent" data-turbo-permanent
-        class="fixed top-0 left-0 bottom-0 w-64 bg-white dark:bg-slate-900 z-[100] -translate-x-full transition-transform duration-300 ease-in-out border-r border-slate-200 dark:border-slate-800 flex flex-col">
-        <div class="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-            <h2 class="text-xl font-black text-primary italic">Melo <span class="text-slate-900 dark:text-white not-italic">Finance</span></h2>
-            <span class="bg-primary text-white text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-tighter">BETA</span>
-            <button onclick="toggleSidebar()" class="text-slate-400 hover:text-slate-900 dark:hover:text-white">
-                <span class="material-symbols-outlined">close</span>
-            </button>
-        </div>
-        <nav class="flex-1 p-4 space-y-2">
-            <a href="/dashboard" class="flex items-center gap-3 p-3 rounded-xl bg-primary/5 text-primary font-bold">
-                <span class="material-symbols-outlined">dashboard</span> Dashboard
-            </a>
-            <a href="/clients" class="flex items-center gap-3 p-3 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-                <span class="material-symbols-outlined">group</span> Clientes
-            </a>
-            <a href="/loans" class="flex items-center gap-3 p-3 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-                <span class="material-symbols-outlined">account_balance_wallet</span> Centro de Préstamos
-            </a>
-            <a href="/history/loans" class="flex items-center gap-3 p-3 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-                <span class="material-symbols-outlined">history</span> Historial Préstamos
-            </a>
-            <a href="/history/movements" class="flex items-center gap-3 p-3 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-                <span class="material-symbols-outlined">receipt_long</span> Movimientos
-            </a>
-            <a href="/reports" class="flex items-center gap-3 p-3 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-                <span class="material-symbols-outlined">analytics</span> Reportes y Analíticas
-            </a>
-            <a href="/settings/profile" class="flex items-center gap-3 p-3 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-                <span class="material-symbols-outlined">settings</span> Ajustes
-            </a>
-        </nav>
-        <div class="p-4 border-t border-slate-100 dark:border-slate-800">
-            <a href="/logout" class="flex items-center gap-3 p-3 rounded-xl text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors font-bold">
-                <span class="material-symbols-outlined">logout</span> Cerrar Sesión
-            </a>
-        </div>
-    </div>
-
-    <div class="relative flex min-h-screen w-full flex-col max-w-5xl mx-auto bg-white dark:bg-slate-900 md:shadow-2xl md:border-x border-slate-200 dark:border-slate-800">
-        <div id="header-persistent" data-turbo-permanent class="flex items-center bg-white dark:bg-slate-900 p-4 pb-2 justify-between sticky top-0 z-30 border-b border-slate-100 dark:border-slate-800">
-            <button onclick="toggleSidebar()" class="text-slate-900 dark:text-slate-100 flex size-10 shrink-0 items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors">
-                <span class="material-symbols-outlined">menu</span>
-            </button>
-            <div class="flex-1 flex flex-col items-center">
-                <h2 class="text-primary italic font-black text-2xl md:text-3xl tracking-tight leading-none pointer-events-none">
-                    Melo <span class="text-slate-900 dark:text-white not-italic">Finance</span>
-                </h2>
-                <p class="text-[10px] md:text-sm text-slate-400 uppercase font-bold tracking-[0.2em] mt-1">Dashboard Integral</p>
-            </div>
-            <div class="flex items-center gap-2">
-                <a href="/notifications" class="flex size-10 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-primary transition-colors relative">
-                    <span class="material-symbols-outlined">notifications</span>
-                    {% if unread_count > 0 %}
-                    <span class="absolute top-2 right-2 w-4 h-4 bg-red-500 rounded-full border border-white dark:border-slate-900 text-[10px] text-white font-bold flex items-center justify-center">{{ unread_count }}</span>
-                    {% endif %}
-                </a>
-                <button onclick="toggleDarkMode()" class="flex size-10 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-primary transition-colors">
-                    <span class="material-symbols-outlined dark:hidden">dark_mode</span>
-                    <span class="material-symbols-outlined hidden dark:block">light_mode</span>
-                </button>
-                <a href="/settings/profile" class="flex size-10 items-center justify-center rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
-                    <span class="material-symbols-outlined">person</span>
-                </a>
-            </div>
-        </div>
-
-        <div class="px-6 py-8 md:py-12 flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <div>
-                <h2 class="text-3xl md:text-6xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">
-                    ¡Hola, <span class="text-primary italic">{{ user.nombre or 'Usuario' }}</span>!
-                </h2>
-                <p class="text-base md:text-2xl text-slate-400 font-medium mt-2">Gestiona tu cartera de préstamos de manera inteligente.</p>
-            </div>
-        </div>
-
-        <div class="md:grid md:grid-cols-2 md:gap-6 md:px-6">
-            <div class="px-4 md:px-0 py-2">
-                <div class="flex flex-1 items-center justify-between gap-4 rounded-[2rem] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm h-full">
-                    <div class="flex flex-col gap-1">
-                        <p class="text-slate-900 dark:text-slate-100 text-lg font-bold leading-tight">Tasa BCV oficial</p>
-                        <p class="text-slate-500 dark:text-slate-400 text-sm font-medium">Sincronizado hace 5 min</p>
+            <div class="flex-1 space-y-4">
+                {% for p in proximos_pagos %}
+                <div class="flex items-center justify-between p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors group">
+                    <div class="flex items-center gap-4">
+                        <div class="size-12 rounded-xl bg-white dark:bg-slate-900 flex items-center justify-center shadow-sm text-slate-400 group-hover:text-primary transition-colors">
+                            <i class="material-icons text-xl">event</i>
+                        </div>
+                        <div>
+                            <p class="text-xs font-black text-slate-900 dark:text-white leading-tight capitalize">{{ p.cliente }}</p>
+                            <p class="text-[10px] font-bold text-slate-400 mt-0.5">{{ p.fecha }} • {{ p.dias_restantes }}</p>
+                        </div>
                     </div>
-                    <div class="flex items-center gap-3 text-primary font-black text-2xl">
-                        Bs. {{ tasa_actual|format_currency }}
-                        <span class="material-symbols-outlined text-primary text-3xl">public</span>
+                    <div class="text-right">
+                        <p class="text-xs font-black text-primary">$ {{ p.monto|format_currency }}</p>
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-500 uppercase">Sugerido</span>
                     </div>
                 </div>
-            </div>
-            <div class="p-4 md:p-0 py-2">
-                <div class="relative overflow-hidden flex flex-col items-stretch justify-start rounded-[2.5rem] shadow-2xl bg-primary p-8 text-white h-full min-h-[180px]">
-                    <div class="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
-                    <div class="relative z-10">
-                        <p class="text-white/80 text-xs font-black uppercase tracking-[0.2em] mb-4">Capital Total Disponible</p>
-                        <div class="space-y-4">
-                            <div class="flex items-baseline gap-3">
-                                <h1 class="text-4xl md:text-5xl font-black tracking-tight">${{ disponible_usd|format_currency }}</h1>
-                                <span class="text-white/60 text-sm font-black">USD</span>
-                            </div>
-                            <div class="flex items-baseline gap-3">
-                                <h2 class="text-2xl md:text-3xl font-bold tracking-tight text-white/90">Bs. {{ disponible_ves|format_currency }}</h2>
-                                <span class="text-white/60 text-xs font-bold">VES</span>
-                            </div>
-                        </div>
-                    </div>
+                {% else %}
+                <div class="flex flex-col items-center justify-center h-full text-slate-300 dark:text-slate-700 py-10">
+                    <i class="material-icons text-5xl mb-2">calendar_today</i>
+                    <p class="text-xs font-bold uppercase tracking-widest">Sin pagos pendientes</p>
                 </div>
+                {% endfor %}
             </div>
         </div>
+    </section>
 
-        <div class="md:grid md:grid-cols-12 md:gap-6 md:px-6">
-            <div class="px-4 pt-4 md:pt-6 md:col-span-12">
-                <h3 class="text-slate-900 dark:text-slate-100 text-lg md:text-2xl font-black leading-tight tracking-tight mb-6 uppercase">Resumen de Cartera</h3>
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div class="bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800 overflow-hidden">
-                        <div class="size-12 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
-                            <span class="material-symbols-outlined text-primary text-2xl">payments</span>
-                        </div>
-                        <p class="text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-1 truncate">Préstamos Activos</p>
-                        <p class="text-slate-900 dark:text-slate-100 text-2xl font-black truncate">{{ total_prestamos_activos }}</p>
-                        <div class="mt-3 flex items-center gap-1 text-[10px] text-red-500 font-bold truncate">
-                            <span class="material-symbols-outlined text-[10px]">warning</span>
-                            <span>{{ prestamos_vencidos }} atrasados</span>
-                        </div>
-                    </div>
-                    <div class="bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800 overflow-hidden">
-                        <div class="size-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center mb-4">
-                            <span class="material-symbols-outlined text-emerald-500 text-2xl">trending_up</span>
-                        </div>
-                        <p class="text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-1 truncate">Ganan. Reales</p>
-                        <p class="text-slate-900 dark:text-slate-100 text-xl md:text-2xl font-black truncate">${{ "%.2f"|format(ganancias_reales) }}</p>
-                        <span class="text-[10px] text-emerald-500 font-bold truncate">Intereses Cobrados</span>
-                    </div>
-                    <div class="bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800 overflow-hidden">
-                        <div class="size-12 rounded-2xl bg-orange-500/10 flex items-center justify-center mb-4">
-                            <span class="material-symbols-outlined text-orange-500 text-2xl">upload</span>
-                        </div>
-                        <p class="text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-1 truncate">Dinero Prestado</p>
-                        <p class="text-slate-900 dark:text-slate-100 text-xl md:text-2xl font-black truncate">${{ capital_prestado_usd|format_currency }}</p>
-                        <span class="text-[10px] text-slate-400 font-medium truncate">Capital en calle</span>
-                    </div>
-                    <div class="bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800 overflow-hidden">
-                        <div class="size-12 rounded-2xl bg-blue-500/10 flex items-center justify-center mb-4">
-                            <span class="material-symbols-outlined text-blue-500 text-2xl">analytics</span>
-                        </div>
-                        <p class="text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-1 truncate">Interés Proyect.</p>
-                        <p class="text-slate-900 dark:text-slate-100 text-xl md:text-2xl font-black truncate">${{ ganancias_proyectadas|format_currency }}</p>
-                        <span class="text-[10px] text-slate-400 font-medium truncate">Por cobrar</span>
-                    </div>
-                </div>
-            </div>
+    <!-- Recent Activity Section -->
+    <section class="space-y-6">
+        <div class="flex items-center justify-between px-2">
+            <h3 class="text-xs font-black text-slate-900 dark:text-white uppercase tracking-[0.2em]">Últimos Movimientos</h3>
+            <a href="/history/movements" class="text-[10px] font-black text-slate-400 uppercase hover:text-primary transition-colors tracking-widest">Ver Historial Completo</a>
         </div>
 
-        <div class="md:grid md:grid-cols-12 md:gap-6 md:px-6">
-            <div class="px-4 mt-6 pb-8 md:col-span-8">
-                <div class="bg-white dark:bg-slate-900 p-6 md:p-8 rounded-[2rem] shadow-sm border border-slate-100 dark:border-slate-800 h-full flex flex-col">
-                    <div class="flex items-center justify-between mb-8">
-                        <p class="text-slate-900 dark:text-slate-100 font-black uppercase tracking-widest text-sm">Rendimiento Mensual</p>
-                        <span class="material-symbols-outlined text-slate-400">more_horiz</span>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {% for r in recientes %}
+            <div class="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-sm flex items-center justify-between hover:border-primary/20 transition-all group">
+                <div class="flex items-center gap-4">
+                    <div class="size-14 rounded-2xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-400 group-hover:bg-primary/5 group-hover:text-primary transition-all">
+                        <i class="material-icons text-3xl">
+                            {% if r.tipo == 'pago_cuota' %}payments{% elif r.tipo == 'nuevo_prestamo' %}add_card{% else %}sync_alt{% endif %}
+                        </i>
                     </div>
-                    <div class="flex flex-1 items-end justify-between h-48 px-2 gap-3">
-                        {% for item in grafico_data %}
-                        <div class="flex-1 flex flex-col items-center gap-1 group/bar">
-                            <div class="w-full bg-primary/20 rounded-t-xl relative transition-all duration-500 hover:bg-primary" style="height: {{ item.height if item.height > 8 else 8 }}%">
-                                <div class="absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[10px] px-3 py-1.5 rounded-lg opacity-0 group-hover/bar:opacity-100 transition-opacity whitespace-nowrap font-bold shadow-xl">
-                                    {{ item.label }}: {{ item.height }}%
-                                </div>
-                            </div>
-                        </div>
-                        {% endfor %}
-                    </div>
-                    <div class="flex justify-between mt-4 text-[10px] text-slate-400 font-black uppercase px-1">
-                        {% for item in grafico_data %}
-                        <span class="flex-1 text-center">{{ item.label[:3] }}</span>
-                        {% endfor %}
+                    <div>
+                        <h4 class="text-sm font-black text-slate-900 dark:text-white leading-tight capitalize">{{ r.descripcion }}</h4>
+                        <p class="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-widest">{{ r.fecha }}</p>
                     </div>
                 </div>
-            </div>
-
-            <div class="px-4 mt-6 pb-28 md:pb-8 md:col-span-4">
-                <div class="bg-slate-50 dark:bg-slate-800/50 rounded-[2rem] border-2 border-dashed border-slate-200 dark:border-slate-700 h-full flex flex-col items-center justify-center p-8 text-center">
-                    <div class="size-16 bg-slate-200 dark:bg-slate-700 rounded-full flex items-center justify-center mb-4">
-                        <span class="material-symbols-outlined text-slate-400">ads_click</span>
-                    </div>
-                    <p class="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1">Espacio Publicitario</p>
-                    <p class="text-slate-500 dark:text-slate-400 text-xs font-medium">Prepara aquí tus anuncios de AdSense.</p>
+                <div class="text-right">
+                    <p class="text-base font-black {% if r.monto > 0 %}text-emerald-500{% else %}text-slate-900 dark:text-white{% endif %}">
+                        {% if r.monto > 0 %}+{% endif %}{{ "$" if r.moneda == "USD" else "Bs." }} {{ r.monto|abs|format_currency }}
+                    </p>
+                    <p class="text-[10px] font-bold text-slate-500 opacity-60 uppercase">{{ r.tipo.replace('_', ' ') }}</p>
                 </div>
             </div>
+            {% endfor %}
         </div>
+    </section>
 
-        <div id="bottom-navbar-persistent" data-turbo-permanent
-            class="fixed bottom-0 md:bottom-6 left-0 right-0 flex max-w-md md:max-w-3xl lg:max-w-5xl mx-auto gap-2 border-t md:border border-slate-200 dark:border-slate-700 md:rounded-3xl md:shadow-2xl bg-white/90 dark:bg-slate-900/90 backdrop-blur-md px-4 pb-6 pt-2 md:py-2 z-40 transition-all">
-            <a class="flex flex-1 md:flex-row flex-col items-center justify-center gap-2 md:gap-3 text-primary md:hover:bg-primary/5 md:py-3 md:rounded-xl transition-colors" href="/dashboard">
-                <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">dashboard</span>
-                <p class="text-[10px] md:text-sm font-bold leading-normal tracking-tight">Dashboard</p>
-            </a>
-            <a class="flex flex-1 md:flex-row flex-col items-center justify-center gap-2 md:gap-3 text-slate-400 dark:text-slate-500 hover:text-primary transition-colors md:hover:bg-primary/5 md:py-3 md:rounded-xl" href="/clients">
-                <span class="material-symbols-outlined">group</span>
-                <p class="text-[10px] md:text-sm font-medium leading-normal tracking-tight">Clientes</p>
-            </a>
-            <a class="flex flex-1 md:flex-row flex-col items-center justify-center gap-2 md:gap-3 text-slate-400 dark:text-slate-500 hover:text-primary transition-colors md:hover:bg-primary/5 md:py-3 md:rounded-xl" href="/loans">
-                <span class="material-symbols-outlined">account_balance_wallet</span>
-                <p class="text-[10px] md:text-sm font-medium leading-normal tracking-tight">Préstamos</p>
-            </a>
-            <a class="flex flex-1 md:flex-row flex-col items-center justify-center gap-2 md:gap-3 text-slate-400 dark:text-slate-500 hover:text-primary transition-colors md:hover:bg-primary/5 md:py-3 md:rounded-xl" href="/reports">
-                <span class="material-symbols-outlined">analytics</span>
-                <p class="text-[10px] md:text-sm font-medium leading-normal tracking-tight">Reportes</p>
-            </a>
-            <a class="flex flex-1 md:flex-row flex-col items-center justify-center gap-2 md:gap-3 text-slate-400 dark:text-slate-500 hover:text-primary transition-colors md:hover:bg-primary/5 md:py-3 md:rounded-xl" href="/settings/profile">
-                <span class="material-symbols-outlined">settings</span>
-                <p class="text-[10px] md:text-sm font-medium leading-normal tracking-tight">Ajustes</p>
-            </a>
-        </div>
-    </div>
+</div>
+{% endblock %}
 
-    <script>
-        function toggleSidebar() {
-            const sidebar = document.getElementById('sidebar');
-            const overlay = document.getElementById('sidebar-overlay');
-            sidebar.classList.toggle('-translate-x-full');
-            overlay.classList.toggle('hidden');
-        }
+{% block scripts_extra %}
+<script>
+    document.addEventListener('turbo:load', () => {
+        const ctx = document.getElementById('activityChart');
+        if (!ctx) return;
 
-        function toggleDarkMode() {
-            const isDark = document.documentElement.classList.toggle('dark');
-            localStorage.setItem('theme', isDark ? 'dark' : 'light');
-        }
+        // Cleanup search chart instance if exists
+        const oldChart = Chart.getChart(ctx);
+        if (oldChart) oldChart.destroy();
 
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/static/sw.js');
-            });
-        }
+        // New safety: also destroy on before-cache
+        document.addEventListener('turbo:before-cache', () => {
+            const chartToCleanup = Chart.getChart(ctx);
+            if (chartToCleanup) chartToCleanup.destroy();
+        }, { once: true });
 
-        // Hide Preloader/Skeleton
-        window.addEventListener('load', function() {
-            const preloader = document.getElementById('preloader');
-            if (preloader) {
-                // Minimum delay to appreciate the skeleton smoothness
-                setTimeout(() => {
-                    preloader.classList.add('loaded');
-                }, 1000);
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: {{ meses_labels|tojson }},
+                datasets: [{
+                    label: 'Intereses USD',
+                    data: {{ meses_valores|tojson }},
+                    borderColor: '#043dae',
+                    borderWidth: 4,
+                    backgroundColor: 'rgba(4, 61, 174, 0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 0,
+                    pointHoverRadius: 6,
+                    pointHoverBackgroundColor: '#043dae',
+                    pointHoverBorderColor: '#ffffff',
+                    pointHoverBorderWidth: 3,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        backgroundColor: '#0f172a',
+                        titleFont: { family: 'Outfit', size: 12, weight: '800' },
+                        bodyFont: { family: 'Outfit', size: 12 },
+                        padding: 12,
+                        cornerRadius: 12,
+                        displayColors: false
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { display: false, drawBorder: false },
+                        ticks: { color: '#94a3b8', font: { family: 'Outfit', size: 10, weight: '600' } }
+                    },
+                    y: {
+                        grid: { color: 'rgba(148, 163, 184, 0.1)', drawBorder: false, borderDash: [5, 5] },
+                        ticks: { 
+                            color: '#94a3b8', 
+                            font: { family: 'Outfit', size: 10 },
+                            callback: (value) => '$' + value
+                        }
+                    }
+                }
             }
         });
-    </script>
-</body>
-
-</html>
+    });
+</script>
+{% endblock %}

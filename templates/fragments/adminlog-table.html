@@ -1,0 +1,23 @@
+<!-- Fragmento de historial de acciones administrativas para HTMX -->
+<table class="w-full text-left">
+    <thead>
+        <tr class="bg-slate-50 dark:bg-slate-950 text-slate-500 text-[10px] font-black uppercase tracking-widest">
+            <th class="px-8 py-4">Fecha</th>
+            <th class="px-8 py-4">Administrador</th>
+            <th class="px-8 py-4">Usuario</th>
+            <th class="px-8 py-4">Acción</th>
+            <th class="px-8 py-4">Detalle</th>
+        </tr>
+    </thead>
+    <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+        {% for log in logs %}
+        <tr>
+            <td class="px-8 py-6 text-xs">{{ log.timestamp.strftime('%d/%m/%Y %H:%M') }}</td>
+            <td class="px-8 py-6 font-bold">{{ log.admin_id }}</td>
+            <td class="px-8 py-6">{{ log.user_id }}</td>
+            <td class="px-8 py-6">{{ log.action }}</td>
+            <td class="px-8 py-6">{{ log.detail or '' }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>

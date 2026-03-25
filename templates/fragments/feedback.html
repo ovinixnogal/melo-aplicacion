@@ -1,0 +1,7 @@
+<!-- Fragmento de feedback para HTMX -->
+{% if msg %}
+<div class="mb-4 p-4 rounded-xl bg-green-100 text-green-800 text-sm font-bold">{{ msg }}</div>
+{% endif %}
+{% if error %}
+<div class="mb-4 p-4 rounded-xl bg-red-100 text-red-800 text-sm font-bold">{{ error }}</div>
+{% endif %}

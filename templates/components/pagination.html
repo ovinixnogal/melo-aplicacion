@@ -1,0 +1,48 @@
+{% if pagination.total_pages > 1 %}
+<nav class="flex items-center justify-between mt-8 p-4 bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm">
+    <div class="flex-1 flex justify-between sm:hidden">
+        {% if pagination.has_prev %}
+        <a href="?page={{ pagination.page - 1 }}" class="relative inline-flex items-center px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-sm font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-200 uppercase tracking-widest transition-all">
+            Anterior
+        </a>
+        {% endif %}
+        {% if pagination.has_next %}
+        <a href="?page={{ pagination.page + 1 }}" class="ml-3 relative inline-flex items-center px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-sm font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-200 uppercase tracking-widest transition-all">
+            Siguiente
+        </a>
+        {% endif %}
+    </div>
+    <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+        <div>
+            <p class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
+                Mostrando <span class="text-primary">{{ (pagination.page - 1) * pagination.limit + 1 }}</span> a <span class="text-primary">{{ [pagination.page * pagination.limit, pagination.total_count] | min }}</span> de <span class="text-primary">{{ pagination.total_count }}</span>
+            </p>
+        </div>
+        <div>
+            <nav class="relative z-0 inline-flex rounded-xl shadow-sm -space-x-px gap-2" aria-label="Pagination">
+                {% if pagination.has_prev %}
+                <a href="?page={{ pagination.page - 1 }}" class="relative inline-flex items-center px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-400 hover:text-primary transition-all">
+                    <span class="material-icons">chevron_left</span>
+                </a>
+                {% endif %}
+                
+                {% for p in range(1, pagination.total_pages + 1) %}
+                    {% if p == pagination.page %}
+                    <span class="z-10 bg-primary text-white px-4 py-2 rounded-xl text-sm font-black shadow-lg shadow-primary/20">{{ p }}</span>
+                    {% elif p <= 3 or p > pagination.total_pages - 3 or (p >= pagination.page - 1 and p <= pagination.page + 1) %}
+                    <a href="?page={{ p }}" class="bg-slate-50 dark:bg-slate-800 text-slate-500 hover:text-primary px-4 py-2 rounded-xl text-sm font-bold transition-all">{{ p }}</a>
+                    {% elif p == 4 or p == pagination.total_pages - 3 %}
+                    <span class="text-slate-300">...</span>
+                    {% endif %}
+                {% endfor %}
+
+                {% if pagination.has_next %}
+                <a href="?page={{ pagination.page + 1 }}" class="relative inline-flex items-center px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-400 hover:text-primary transition-all">
+                    <span class="material-icons">chevron_right</span>
+                </a>
+                {% endif %}
+            </nav>
+        </div>
+    </div>
+</nav>
+{% endif %}

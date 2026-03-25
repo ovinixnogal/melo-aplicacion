@@ -1,0 +1,69 @@
+<!-- Fragmento de tabla de usuarios para HTMX -->
+<table class="w-full text-left">
+    <thead>
+        <tr class="bg-slate-50 dark:bg-slate-950 text-slate-500 text-[10px] font-black uppercase tracking-widest">
+            <th class="px-8 py-4">Usuario</th>
+            <th class="px-8 py-4">Datos</th>
+            <th class="px-8 py-4">Almacenamiento</th>
+            <th class="px-8 py-4">Acceso</th>
+            <th class="px-8 py-4 text-right">Acción</th>
+        </tr>
+    </thead>
+    <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+        {% for u in users %}
+        <tr class="hover:bg-slate-50/50 dark:hover:bg-white/5 transition-colors">
+            <td class="px-8 py-6">
+                <span class="font-bold block">{{ u.nombre }}</span>
+                <span class="text-xs text-slate-500 block">{{ u.email }}</span>
+            </td>
+            <td class="px-8 py-6">
+                <div class="flex gap-4">
+                    <div class="text-center">
+                        <p class="text-xs font-black">{{ u.clients }}</p>
+                        <p class="text-[8px] uppercase text-slate-400">Clientes</p>
+                    </div>
+                    <div class="text-center">
+                        <p class="text-xs font-black">{{ u.loans }}</p>
+                        <p class="text-[8px] uppercase text-slate-400">Préstamos</p>
+                    </div>
+                </div>
+            </td>
+            <td class="px-8 py-6">
+                <div class="w-24 bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden mb-1">
+                    {# Calcula el porcentaje, lo limita entre 0 y 100, y coloca el % fuera de la expresión Jinja #}
+                                        <div class="bg-melo h-full storage-bar" data-width="{{ u.storage_percent }}"></div>
+                </div>
+                                {% if loop.first %}
+                                <script>
+                                document.addEventListener('DOMContentLoaded', function() {
+                                    document.querySelectorAll('.storage-bar').forEach(function(el) {
+                                        var w = el.getAttribute('data-width');
+                                        if (w !== null) el.style.width = w + '%';
+                                    });
+                                });
+                                </script>
+                                {% endif %}
+                <span class="text-xs font-bold">{{ u.storage }} MB</span>
+            </td>
+            <td class="px-8 py-6">
+                {% if u.is_active %}
+                <span class="px-3 py-1 bg-green-100 text-green-600 dark:bg-green-500/10 text-[10px] font-black rounded-full">ACTIVO</span>
+                {% else %}
+                <span class="px-3 py-1 bg-red-100 text-red-600 dark:bg-red-500/10 text-[10px] font-black rounded-full">BLOQUEADO</span>
+                {% endif %}
+            </td>
+            <td class="px-8 py-6 text-right">
+                <form hx-post="/admin/toggle-user/{{ u.id }}" hx-target="#users-table" hx-swap="outerHTML" method="POST">
+                    <button type="submit" class="p-2 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-white/5 transition-all">
+                        {% if u.is_active %}
+                        <span class="material-symbols-outlined text-red-500">block</span>
+                        {% else %}
+                        <span class="material-symbols-outlined text-green-500">check_circle</span>
+                        {% endif %}
+                    </button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>

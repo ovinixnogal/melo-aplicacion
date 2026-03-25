@@ -1,3 +1,36 @@
+
+import os
+from sqlalchemy import create_engine, Column, Integer, String, Numeric, ForeignKey, DateTime, Date, Boolean, text
+from sqlalchemy.orm import declarative_base, sessionmaker, relationship
+
+DATABASE_URL = os.environ.get("DATABASE_URL")
+if not DATABASE_URL:
+    DATABASE_URL = "sqlite:///./loans.db"
+
+# Si la URL empieza con postgres:// (como en Render/Neon), cambiarla a postgresql:// para SQLAlchemy
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+
+# Configuración del motor
+if DATABASE_URL.startswith("sqlite"):
+    print("DATABASE: Usando SQLite local.")
+    engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+else:
+    print(f"DATABASE: Conectando a {DATABASE_URL.split('@')[-1] if '@' in DATABASE_URL else 'remoto'}")
+    engine = create_engine(DATABASE_URL, pool_pre_ping=True)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+Base = declarative_base()
+
+class AdminActionLog(Base):
+    __tablename__ = "admin_action_logs"
+    id = Column(Integer, primary_key=True, index=True)
+    admin_id = Column(Integer, ForeignKey("users.id"))
+    user_id = Column(Integer, ForeignKey("users.id"))
+    action = Column(String)
+    detail = Column(String, nullable=True)
+    timestamp = Column(DateTime(timezone=True), default=lambda: get_now_utc())
+
 from datetime import datetime, timezone, timedelta
 
 # Zona horaria de Venezuela (UTC-4, sin ajuste de horario de verano)
@@ -32,30 +65,11 @@ def utc_to_vet(dt: datetime) -> datetime:
         dt = dt.replace(tzinfo=timezone.utc)
     return dt.astimezone(VET)
 
-import os
-from sqlalchemy import create_engine, Column, Integer, String, Numeric, ForeignKey, DateTime, Date, Boolean, text
-from sqlalchemy.orm import declarative_base, sessionmaker, relationship
-DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite:///./loans.db")
-
-# Si la URL empieza con postgres:// (como en Render/Neon), cambiarla a postgresql:// para SQLAlchemy
-if DATABASE_URL.startswith("postgres://"):
-    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
-
-# Configuración del motor
-if DATABASE_URL.startswith("sqlite"):
-    print("DATABASE: Usando SQLite local.")
-    engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
-else:
-    print(f"DATABASE: Conectando a {DATABASE_URL.split('@')[-1] if '@' in DATABASE_URL else 'remoto'}")
-    engine = create_engine(DATABASE_URL, pool_pre_ping=True)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-Base = declarative_base()
 
 class User(Base):
     __tablename__ = "users"
     id = Column(Integer, primary_key=True, index=True)
-    username = Column(String, unique=True, index=True) 
+    email = Column(String, unique=True, index=True, nullable=False)
     nombre = Column(String, nullable=True)
     apellido = Column(String, nullable=True)
     hashed_password = Column(String)
@@ -66,14 +80,13 @@ class User(Base):
     is_active = Column(Boolean, default=True)
     is_admin = Column(Boolean, default=False)
     webauthn_id = Column(String, unique=True, nullable=True) # Unico para cada usuario
-    
     credentials = relationship("WebAuthnCredential", back_populates="user")
     push_subscriptions = relationship("PushSubscription", back_populates="user")
 
 class Client(Base):
     __tablename__ = "clients"
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"))
+    user_id = Column(Integer, ForeignKey("users.id"), index=True)
     nombre = Column(String, index=True)
     telefono = Column(String)
     cedula = Column(String, nullable=True)
@@ -94,7 +107,7 @@ class Rate(Base):
 class Loan(Base):
     __tablename__ = "loans"
     id = Column(Integer, primary_key=True, index=True)
-    client_id = Column(Integer, ForeignKey("clients.id"))
+    client_id = Column(Integer, ForeignKey("clients.id"), index=True)
     monto_principal = Column(Numeric(precision=20, scale=4)) 
     monto_original = Column(Numeric(precision=20, scale=4), nullable=True) 
     moneda = Column(String) # 'USD' o 'VES'
@@ -104,9 +117,9 @@ class Loan(Base):
     cuotas_totales = Column(Integer, default=1)
     fecha_inicio = Column(Date, default=lambda: get_now_vet().date())
     fecha_vencimiento = Column(Date, nullable=True)
-    estatus = Column(String, default="activo") 
+    estatus = Column(String, default="activo", index=True) 
     notas = Column(String, nullable=True)
-    fecha_creacion = Column(DateTime(timezone=True), default=get_now_utc)
+    fecha_creacion = Column(DateTime(timezone=True), default=get_now_utc, index=True)
     updated_at = Column(DateTime(timezone=True), default=get_now_utc, onupdate=get_now_utc)
     
     client = relationship("Client", back_populates="loans")
@@ -116,7 +129,7 @@ class Loan(Base):
 class LoanAttachment(Base):
     __tablename__ = "loan_attachments"
     id = Column(Integer, primary_key=True, index=True)
-    loan_id = Column(Integer, ForeignKey("loans.id"))
+    loan_id = Column(Integer, ForeignKey("loans.id"), index=True)
     file_path = Column(String)
     file_size = Column(Integer, default=0) # Tamaño en bytes
     created_at = Column(DateTime(timezone=True), default=get_now_utc)
@@ -126,12 +139,12 @@ class LoanAttachment(Base):
 class Transaction(Base):
     __tablename__ = "transactions"
     id = Column(Integer, primary_key=True, index=True)
-    loan_id = Column(Integer, ForeignKey("loans.id"))
+    loan_id = Column(Integer, ForeignKey("loans.id"), index=True)
     tipo = Column(String) 
     monto = Column(Numeric(precision=20, scale=4)) 
     monto_real = Column(Numeric(precision=20, scale=4), nullable=True) 
     moneda = Column(String, default="USD") 
-    fecha = Column(DateTime(timezone=True), default=get_now_utc)
+    fecha = Column(DateTime(timezone=True), default=get_now_utc, index=True)
     
     loan = relationship("Loan", back_populates="transactions")
 
