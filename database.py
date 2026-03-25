@@ -7,9 +7,14 @@ DATABASE_URL = os.environ.get("DATABASE_URL")
 if not DATABASE_URL:
     DATABASE_URL = "sqlite:///./loans.db"
 
-# Si la URL empieza con postgres:// (como en Render/Neon), cambiarla a postgresql:// para SQLAlchemy
+# Corrección para SQLAlchemy 1.4+ y Supabase en Railway
 if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+
+# Asegurar modo SSL si es una base de datos remota
+if "postgresql" in DATABASE_URL and "sslmode" not in DATABASE_URL:
+    separator = "&" if "?" in DATABASE_URL else "?"
+    DATABASE_URL += f"{separator}sslmode=require"
 
 # Configuración del motor
 if DATABASE_URL.startswith("sqlite"):
