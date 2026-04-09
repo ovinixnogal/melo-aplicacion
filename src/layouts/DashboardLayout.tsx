@@ -10,7 +10,8 @@ import {
   UserSearch,
   History,
   AlertTriangle,
-  Briefcase
+  Briefcase,
+  Calendar
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { auth } from '../api/firebase';
@@ -55,8 +56,10 @@ const DashboardLayout: React.FC = () => {
     { name: 'Capital', path: '/capital', icon: Briefcase },
     { name: 'Clientes', path: '/clientes', icon: UserSearch },
     { name: 'Préstamos', path: '/prestamos', icon: Wallet },
+    { name: 'Calendario', path: '/calendario', icon: Calendar },
     { name: 'Historial', path: '/historial', icon: History },
-    { name: 'Configuración', path: '/perfil', icon: Settings },
+    { name: 'Mi Cuenta', path: '/perfil', icon: UserSearch },
+    { name: 'Ajustes', path: '/ajustes', icon: Settings },
   ];
 
   const getSectionName = () => {
@@ -84,7 +87,6 @@ const DashboardLayout: React.FC = () => {
       </div>
 
       <nav className="flex-1 px-5 py-2 space-y-2 overflow-y-auto custom-scrollbar">
-        <p className="px-6 text-[10px] font-black uppercase tracking-[0.4em] text-white/20 mb-4 mt-4 font-sans">Menú Principal</p>
         {menuItems.map((item) => (
           <NavLink
             key={item.path}
@@ -111,7 +113,7 @@ const DashboardLayout: React.FC = () => {
               </div>
               <div className="min-w-0">
                  <p className="text-[11px] font-black text-white truncate uppercase tracking-wider">{user?.displayName?.split(' ')[0] || 'Usuario'}</p>
-                 <p className="text-[9px] text-white/30 font-black tracking-[0.2em] uppercase mt-1 italic">Verified Account</p>
+                 <p className="text-[9px] text-white/30 font-black tracking-[0.2em] uppercase mt-1 italic">Cuenta Verificada</p>
               </div>
            </div>
         </div>
@@ -128,7 +130,7 @@ const DashboardLayout: React.FC = () => {
   );
 
   return (
-    <div className="min-h-screen bg-vanilla font-sans selection:bg-pear selection:text-slate">
+    <div className="min-h-screen bg-vanilla font-sans selection:bg-pear selection:text-slate overflow-x-hidden">
       
       {/* 1. SIDEBAR DESKTOP */}
       <aside className="hidden md:flex flex-col fixed left-4 top-4 bottom-4 w-72 z-50 rounded-[48px] overflow-hidden shadow-2xl shadow-slate/20 border border-slate/5">
@@ -145,10 +147,10 @@ const DashboardLayout: React.FC = () => {
       </div>
 
       {/* 3. MAIN CONTENT AREA */}
-      <div className="flex-1 flex flex-col md:ml-72 min-h-screen transition-all duration-500">
+      <div className="flex-1 flex flex-col md:ml-[300px] min-h-screen transition-all duration-500 overflow-x-hidden">
         
         {/* TOPBAR */}
-        <header className="sticky top-0 h-16 md:h-24 bg-vanilla/80 backdrop-blur-lg md:bg-transparent border-b border-slate/5 md:border-0 flex items-center justify-between px-6 md:px-10 z-40">
+        <header className="sticky top-1 h-16 md:h-20 bg-vanilla/80 backdrop-blur-lg md:bg-transparent border-b border-slate/5 md:border-0 flex items-center justify-between px-6 md:px-10 z-40">
            <div className="flex items-center gap-6">
               <button 
                 onClick={() => setMobileMenuOpen(true)} 
@@ -157,12 +159,12 @@ const DashboardLayout: React.FC = () => {
                 <Menu size={26} />
               </button>
  
-              <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-5">
-                <div className="hidden md:flex items-center gap-2">
+              <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-5 md:hidden">
+                <div className="flex items-center gap-2">
                    <div className="w-1.5 h-1.5 rounded-full bg-pear animate-pulse shadow-[0_0_10px_var(--pear)]"></div>
                    <h2 className="text-slate/20 font-black uppercase text-[9px] tracking-[0.3em] leading-none">Melo | Préstamos</h2>
                 </div>
-                <div className="hidden md:block w-3 h-[1px] bg-slate/10"></div>
+                <div className="w-3 h-[1px] bg-slate/10 hidden md:block"></div>
                 <h1 className="font-black text-[14px] md:text-lg uppercase tracking-[0.2em] text-slate italic leading-tight">
                   {getSectionName()}
                 </h1>
@@ -209,8 +211,8 @@ const DashboardLayout: React.FC = () => {
                </p>
              </div>
            )}
-            <div className="p-2 sm:p-4 md:p-6 lg:p-8">
-              <div className="min-h-full bg-white rounded-[32px] sm:rounded-[48px] md:rounded-[64px] border border-slate/5 shadow-3xl shadow-slate/5 overflow-hidden transition-all duration-700 p-4 sm:p-8 md:p-10 lg:p-10">
+            <div className="p-2 sm:p-3 md:p-4 lg:p-5">
+              <div className="min-h-full bg-white rounded-[32px] sm:rounded-[48px] md:rounded-[64px] border border-slate/5 shadow-3xl shadow-slate/5 overflow-hidden transition-all duration-700 p-4 sm:p-6 md:p-8 lg:p-8">
                 <Outlet />
               </div>
             </div>

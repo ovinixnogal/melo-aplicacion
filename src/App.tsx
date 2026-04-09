@@ -20,6 +20,7 @@ import HistoryPage from './pages/HistoryPage';
 import ProfilePage from './pages/ProfilePage';
 import SubscriptionPage from './pages/SubscriptionPage';
 import CapitalPage from './pages/CapitalPage';
+import CalendarPage from './pages/CalendarPage';
 
 // Admin Pages
 import AdminStats from './pages/admin/AdminStats';
@@ -27,6 +28,7 @@ import AdminUsers from './pages/admin/AdminUsers';
 import AdminSubscriptions from './pages/admin/AdminSubscriptions';
 import AdminPayments from './pages/admin/AdminPayments';
 import AdminSystem from './pages/admin/AdminSystem';
+import SettingsPage from './pages/SettingsPage';
 import TermsPage from './pages/TermsPage';
 
 import { useLocation } from 'react-router-dom';
@@ -72,8 +74,10 @@ function App() {
             <Route path="/prestamos" element={<LoansPage />} />
             <Route path="/prestamos/:id" element={<LoanDetailPage />} />
             <Route path="/clientes" element={<ClientsPage />} />
+            <Route path="/calendario" element={<CalendarPage />} />
             <Route path="/historial" element={<HistoryPage />} />
             <Route path="/perfil" element={<ProfilePage />} />
+            <Route path="/ajustes" element={<SettingsPage />} />
           </Route>
 
           {/* Admin Routes */}

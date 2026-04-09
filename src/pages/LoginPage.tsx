@@ -46,32 +46,29 @@ const LoginPage: React.FC = () => {
 
   return (
     <div className="auth-root">
-      <div className="auth-grain" />
-      
-      {/* Background Blobs */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-30">
-        <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-pear/20 rounded-full blur-[120px]"></div>
-        <div className="absolute bottom-[-10%] left-[-10%] w-[450px] h-[450px] bg-indigo-100/30 rounded-full blur-[100px]"></div>
-      </div>
+      {/* Glow Effects */}
+      <div className="glow-effect" style={{ top: '-10%', right: '-5%', width: '400px', height: '400px', opacity: 0.1 }}></div>
+      <div className="glow-effect" style={{ bottom: '5%', left: '5%', width: '300px', height: '300px', opacity: 0.05 }}></div>
 
       <div className="auth-card animate-in fade-in zoom-in duration-500">
-        <Link to="/" className="back-link mb-8 inline-flex items-center gap-2">
-           <ArrowRight className="rotate-180" size={14} /> Volver
+        <Link to="/" className="back-link mb-8 inline-flex items-center gap-2 !text-white/40 hover:!text-pear transition-colors">
+          <ArrowRight className="rotate-180" size={14} /> Volver al Inicio
         </Link>
         
         <div className="auth-logo-wrap">
           <div className="auth-logo-icon">
-             <span className="text-2xl font-black italic">M</span>
+             <span className="text-2xl font-[1000] italic">M</span>
           </div>
-          <h1 className="auth-title underline decoration-pear decoration-8 underline-offset-4">
-             Bienvenido
+          <h1 className="auth-title">
+             Bienvenido a <br />
+             <span className="text-pear text-glow">Melo.</span>
           </h1>
-          <p className="auth-subtitle">MELO Access</p>
+          <p className="auth-subtitle">Acceso Seguro de Prestamista</p>
         </div>
 
         {error && (
-          <div className="mb-8 p-4 bg-rose-50 text-rose-600 text-[10px] font-black uppercase tracking-widest rounded-xl border-2 border-slate flex items-center gap-3 animate-shake shadow-[4px_4px_0_#1A1A1A]">
-            <div className="w-6 h-6 bg-rose-600 text-white rounded-lg flex items-center justify-center shrink-0">!</div>
+          <div className="mb-8 p-4 bg-rose-500/10 text-rose-500 text-[10px] font-black uppercase tracking-widest rounded-xl border border-rose-500/20 flex items-center gap-3 animate-shake">
+            <div className="w-6 h-6 bg-rose-500 text-white rounded-lg flex items-center justify-center shrink-0">!</div>
             {error}
           </div>
         )}
@@ -84,6 +81,7 @@ const LoginPage: React.FC = () => {
             icon={<Mail size={18} />}
             error={errors.email?.message}
             {...register('email')}
+            className="dark-input"
           />
 
           <div className="relative">
@@ -94,11 +92,12 @@ const LoginPage: React.FC = () => {
               icon={<Lock size={18} />}
               error={errors.password?.message}
               {...register('password')}
+              className="dark-input"
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-6 top-[54px] text-gray-400 hover:text-slate transition-colors focus:outline-none"
+              className="absolute right-6 top-[54px] text-white/20 hover:text-pear transition-colors focus:outline-none"
             >
               {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
             </button>
@@ -125,16 +124,15 @@ const LoginPage: React.FC = () => {
               Crea tu perfil aquí
             </Link>
           </p>
-          <Link to="/terminos" className="text-[10px] font-black uppercase tracking-widest text-slate/40 hover:text-slate transition-colors">
+          <Link to="/terminos" className="text-[10px] font-black uppercase tracking-widest text-white/10 hover:text-pear transition-colors">
             Términos y Condiciones
           </Link>
         </div>
       </div>
 
-      {/* Decorative Label */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 opacity-20 pointer-events-none hidden md:block">
-        <span className="text-[10px] font-black tracking-[0.5em] uppercase text-slate border-t border-slate/20 pt-4">
-          Auth Platform v2.0
+      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 opacity-10 pointer-events-none hidden md:block">
+        <span className="text-[10px] font-black tracking-[0.5em] uppercase text-white border-t border-white/20 pt-4">
+          Auth Platform v2.0 | SECURED
         </span>
       </div>
     </div>

@@ -10,7 +10,6 @@ import {
   Minus,
   AlertCircle,
   TrendingUp,
-  HandCoins,
   ChevronLeft,
   ChevronRight
 } from 'lucide-react';
@@ -18,6 +17,20 @@ import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import Skeleton from '../components/ui/Skeleton';
 import Modal from '../components/ui/Modal';
+ 
+const FormatAmount: React.FC<{ value: number; symbol: string; colorClass?: string }> = ({ value, symbol, colorClass = "text-slate" }) => {
+  const parts = value.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).split(',');
+  const whole = parts[0];
+  const decimal = parts[1];
+
+  return (
+    <div className={`flex items-baseline flex-wrap gap-x-2 ${colorClass}`}>
+      <span className="text-xl sm:text-2xl font-black opacity-40">{symbol}</span>
+      <span className="text-2xl sm:text-4xl xl:text-5xl font-[1000] tracking-tighter italic leading-none">{whole}</span>
+      <span className="text-base sm:text-xl font-black opacity-30">,{decimal}</span>
+    </div>
+  );
+};
 
 const CapitalPage: React.FC = () => {
   const { user } = useAuth();
@@ -73,7 +86,7 @@ const CapitalPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="p-4 sm:p-8 lg:p-12 space-y-8 sm:space-y-12 animate-in fade-in duration-500 pb-20">
+      <div className="space-y-8 sm:space-y-12 animate-in fade-in duration-500 pb-20">
          <Skeleton className="h-12 w-64" />
          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <Skeleton className="h-[220px] sm:h-[280px] rounded-[32px] sm:rounded-[48px]" />
@@ -85,7 +98,7 @@ const CapitalPage: React.FC = () => {
   }
 
   return (
-    <div className="p-4 sm:p-8 lg:p-12 space-y-8 sm:space-y-12 animate-in fade-in zoom-in-95 duration-700 pb-24">
+    <div className="space-y-8 sm:space-y-12 animate-in fade-in zoom-in-95 duration-700 pb-24">
       
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
@@ -112,86 +125,58 @@ const CapitalPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 mt-10">
-         {/* Balance Cards Group */}
-         <div className="lg:col-span-12 grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-8">
-            {/* USD Balance */}
-            <div className="bg-slate rounded-[24px] sm:rounded-[40px] p-4 sm:p-8 flex flex-col justify-between min-h-[140px] sm:min-h-[260px] shadow-2xl border-2 sm:border-4 border-slate relative overflow-hidden group">
-               <div className="absolute top-[-20%] right-[-10%] w-[100px] sm:w-[150px] h-[100px] sm:h-[150px] bg-pear/10 rounded-full blur-[40px] sm:blur-[70px]"></div>
-               <div className="flex items-start justify-between relative z-10">
-                  <div className="w-8 h-8 sm:w-11 sm:h-11 bg-pear text-slate rounded-lg sm:rounded-2xl flex items-center justify-center font-black text-sm sm:text-xl shadow-[2px_2px_0_rgba(0,0,0,0.3)] sm:shadow-[4px_4px_0_rgba(0,0,0,0.3)] border border-slate sm:border-2">
-                    <DollarSign size={16} className="sm:w-5 sm:h-5" strokeWidth={3} />
+      <div className="space-y-4 sm:space-y-6">
+         {/* USD SECTION */}
+         <div className="bg-slate rounded-[32px] sm:rounded-[40px] p-5 sm:p-8 shadow-2xl shadow-slate/30 border border-slate relative overflow-hidden group">
+            <div className="absolute top-[-20%] right-[-10%] w-[200px] h-[200px] bg-pear/10 rounded-full blur-[80px] pointer-events-none"></div>
+            
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
+               <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 sm:w-16 sm:h-16 bg-pear text-slate rounded-[20px] flex items-center justify-center shadow-xl group-hover:rotate-6 transition-transform">
+                     <DollarSign size={24} className="sm:w-7 sm:h-7" strokeWidth={3} />
                   </div>
-                  <span className="px-2 py-0.5 sm:px-3 sm:py-1 bg-white/5 text-pear text-[7px] sm:text-[9px] font-black rounded-full uppercase tracking-widest border border-pear/20 italic">USD</span>
+                  <div>
+                     <span className="px-2 py-0.5 bg-white/5 text-pear text-[8px] font-black rounded-full uppercase tracking-widest border border-pear/20 italic mb-1 inline-block">USD</span>
+                     <h2 className="text-xl sm:text-2xl font-black text-white italic tracking-tighter uppercase leading-none">Dólares <span className="text-pear">Efectivo</span></h2>
+                  </div>
                </div>
-               <div className="relative z-10 mt-4 sm:mt-8">
-                  <h3 className="text-[7px] sm:text-[9px] font-black text-white/30 uppercase tracking-[0.2em] sm:tracking-[0.4em] mb-1 sm:mb-2">Capital</h3>
-                  <div className="flex items-baseline gap-0.5 sm:gap-2 overflow-hidden">
-                     <span className="text-xs sm:text-2xl font-black text-pear tracking-tight">$</span>
-                     <p className="text-xl sm:text-4xl xl:text-5xl 2xl:text-6xl font-black text-white tracking-tighter italic leading-none truncate w-full" title={balances.USD.toLocaleString()}>
-                        {balances.USD.toLocaleString()}
-                     </p>
+
+               <div className="flex flex-col sm:flex-row gap-6 md:gap-12 lg:gap-16">
+                  <div className="space-y-1">
+                     <p className="text-[8px] font-black text-white/30 uppercase tracking-[0.2em]">Capital</p>
+                     <FormatAmount value={balances.USD} symbol="$" colorClass="text-white" />
+                  </div>
+                  <div className="w-[1px] h-12 bg-white/10 hidden sm:block"></div>
+                  <div className="space-y-1">
+                     <p className="text-[8px] font-black text-pear/40 uppercase tracking-[0.3em]">Intereses</p>
+                     <FormatAmount value={balances.earnedUSD || 0} symbol="$" colorClass="text-pear" />
                   </div>
                </div>
             </div>
+         </div>
 
-            {/* VES Balance */}
-            <div className="bg-white rounded-[24px] sm:rounded-[40px] p-4 sm:p-8 flex flex-col justify-between min-h-[140px] sm:min-h-[260px] shadow-2xl border-2 sm:border-4 border-slate relative overflow-hidden group">
-               <div className="flex items-start justify-between relative z-10">
-                  <div className="w-8 h-8 sm:w-11 sm:h-11 bg-slate text-pear rounded-lg sm:rounded-2xl flex items-center justify-center font-black text-sm sm:text-xl shadow-[2px_2px_0_rgba(0,0,0,0.1)] sm:shadow-[4px_4px_0_rgba(0,0,0,0.1)] border border-slate sm:border-2">
-                    <TrendingUp size={16} className="sm:w-5 sm:h-5" strokeWidth={3} />
+         {/* VES SECTION */}
+         <div className="bg-white rounded-[32px] sm:rounded-[40px] p-5 sm:p-8 shadow-xl shadow-slate/5 border border-slate/5 relative overflow-hidden group">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
+               <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 sm:w-16 sm:h-16 bg-slate text-pear rounded-[20px] flex items-center justify-center shadow-xl group-hover:-rotate-6 transition-transform">
+                     <TrendingUp size={24} className="sm:w-7 sm:h-7" strokeWidth={3} />
                   </div>
-                  <span className="px-2 py-0.5 sm:px-3 sm:py-1 bg-slate text-pear text-[7px] sm:text-[9px] font-black rounded-full uppercase tracking-widest border border-slate italic">VES</span>
-               </div>
-               <div className="relative z-10 mt-4 sm:mt-8">
-                  <div className="flex items-center gap-1 sm:gap-2 mb-1 sm:mb-3 text-slate/40 flex-wrap">
-                     <h3 className="text-[7px] sm:text-[9px] font-black uppercase tracking-[0.2em] sm:tracking-[0.4em]">Capital</h3>
-                  </div>
-                  <div className="flex items-baseline gap-0.5 sm:gap-2 overflow-hidden">
-                     <span className="text-[10px] sm:text-xl font-black text-slate tracking-tight">Bs.</span>
-                     <p className="text-xl sm:text-4xl xl:text-5xl 2xl:text-6xl font-black text-slate tracking-tighter italic leading-none truncate w-full" title={balances.VES.toLocaleString()}>
-                        {balances.VES.toLocaleString()}
-                     </p>
+                  <div>
+                     <span className="px-2 py-0.5 bg-slate/5 text-slate/40 text-[8px] font-black rounded-full uppercase tracking-widest border border-slate/5 italic mb-1 inline-block">VES</span>
+                     <h2 className="text-xl sm:text-2xl font-black text-slate italic tracking-tighter uppercase leading-none">Bolívares <span className="text-slate/40">Soberanos</span></h2>
                   </div>
                </div>
-            </div>
 
-            {/* USD Earned */}
-            <div className="bg-pear rounded-[24px] sm:rounded-[40px] p-4 sm:p-8 flex flex-col justify-between min-h-[140px] sm:min-h-[260px] shadow-2xl border-2 sm:border-4 border-slate relative overflow-hidden group">
-               <div className="flex items-start justify-between relative z-10">
-                  <div className="w-8 h-8 sm:w-11 sm:h-11 bg-slate text-pear rounded-lg sm:rounded-2xl flex items-center justify-center font-black text-sm sm:text-xl shadow-[2px_2px_0_rgba(0,0,0,0.1)] sm:shadow-[4px_4px_0_rgba(0,0,0,0.1)] border border-slate sm:border-2">
-                    <HandCoins size={16} className="sm:w-5 sm:h-5" strokeWidth={3} />
+               <div className="flex flex-col sm:flex-row gap-6 md:gap-12 lg:gap-16">
+                  <div className="space-y-1">
+                     <p className="text-[8px] font-black text-slate/20 uppercase tracking-[0.2em]">Capital</p>
+                     <FormatAmount value={balances.VES} symbol="Bs." colorClass="text-slate" />
                   </div>
-                  <span className="px-2 py-0.5 sm:px-3 sm:py-1 bg-slate text-pear text-[7px] sm:text-[9px] font-black rounded-full uppercase tracking-widest border border-slate italic">Ganas USD</span>
-               </div>
-               <div className="relative z-10 mt-4 sm:mt-8">
-                  <h3 className="text-[7px] sm:text-[9px] font-black text-slate/40 uppercase tracking-[0.2em] sm:tracking-[0.4em] mb-1 sm:mb-2 text-slate/60">Intereses</h3>
-                  <div className="flex items-baseline gap-0.5 sm:gap-2 overflow-hidden">
-                     <span className="text-xs sm:text-2xl font-black text-slate tracking-tight">$</span>
-                     <p className="text-xl sm:text-4xl xl:text-5xl 2xl:text-6xl font-black text-slate tracking-tighter italic leading-none truncate w-full" title={(balances.earnedUSD || 0).toLocaleString()}>
-                        {(balances.earnedUSD || 0).toLocaleString()}
-                     </p>
-                  </div>
-               </div>
-            </div>
-
-            {/* VES Earned */}
-            <div className="bg-white rounded-[24px] sm:rounded-[40px] p-4 sm:p-8 flex flex-col justify-between min-h-[140px] sm:min-h-[260px] shadow-2xl border-2 sm:border-4 border-emerald-500/30 relative overflow-hidden group">
-               <div className="flex items-start justify-between relative z-10">
-                  <div className="w-8 h-8 sm:w-11 sm:h-11 bg-emerald-500 text-white rounded-lg sm:rounded-2xl flex items-center justify-center font-black text-sm sm:text-xl shadow-[2px_2px_0_rgba(0,0,0,0.1)] sm:shadow-[4px_4px_0_rgba(0,0,0,0.1)] border border-emerald-600 sm:border-2">
-                    <HandCoins size={16} className="sm:w-5 sm:h-5" strokeWidth={3} />
-                  </div>
-                  <span className="px-2 py-0.5 sm:px-3 sm:py-1 bg-emerald-100 text-emerald-600 text-[7px] sm:text-[9px] font-black rounded-full uppercase tracking-widest border border-emerald-200 italic">Ganas VES</span>
-               </div>
-               <div className="relative z-10 mt-4 sm:mt-8">
-                  <div className="flex items-center gap-1 sm:gap-2 mb-1 sm:mb-3 text-emerald-500/40 flex-wrap">
-                     <h3 className="text-[7px] sm:text-[9px] font-black uppercase tracking-[0.2em] sm:tracking-[0.4em]">Intereses</h3>
-                  </div>
-                  <div className="flex items-baseline gap-0.5 sm:gap-2 overflow-hidden">
-                     <span className="text-[10px] sm:text-xl font-black text-emerald-600 tracking-tight">Bs.</span>
-                     <p className="text-xl sm:text-4xl xl:text-5xl 2xl:text-6xl font-black text-emerald-600 tracking-tighter italic leading-none truncate w-full" title={(balances.earnedVES || 0).toLocaleString()}>
-                        {(balances.earnedVES || 0).toLocaleString()}
-                     </p>
+                  <div className="w-[1px] h-12 bg-slate/5 hidden sm:block"></div>
+                  <div className="space-y-1">
+                     <p className="text-[8px] font-black text-emerald-500/30 uppercase tracking-[0.3em]">Intereses</p>
+                     <FormatAmount value={balances.earnedVES || 0} symbol="Bs." colorClass="text-emerald-600" />
                   </div>
                </div>
             </div>
@@ -399,45 +384,45 @@ const CapitalPage: React.FC = () => {
 
          {/* Pagination Controls */}
          {totalPages > 1 && (
-           <div className="flex items-center justify-center gap-4 pt-4">
-              <button 
-                onClick={() => handlePageChange(currentPage - 1)}
-                disabled={currentPage === 1}
-                className="p-3 bg-white border-2 border-slate rounded-xl disabled:opacity-30 hover:bg-vanilla transition-colors shadow-[4px_4px_0_#1A1A1A] active:shadow-none active:translate-x-1 active:translate-y-1"
-              >
-                 <ChevronLeft size={20} />
-              </button>
-              <div className="flex gap-2">
-                 {[...Array(totalPages)].map((_, i) => (
-                    <button
+            <div className="flex justify-center items-center gap-2 pt-10">
+               <button 
+                 onClick={() => handlePageChange(currentPage - 1)}
+                 disabled={currentPage === 1}
+                 className="p-3 bg-white border border-slate/5 rounded-2xl disabled:opacity-30 hover:bg-vanilla transition-all shadow-sm hover:shadow-md active:scale-95"
+               >
+                  <ChevronLeft size={20} className="text-slate" />
+               </button>
+               <div className="flex gap-2">
+                  {[...Array(totalPages)].map((_, i) => (
+                    <button 
                       key={i}
                       onClick={() => handlePageChange(i + 1)}
-                      className={`w-10 h-10 rounded-xl font-black text-[11px] border-2 border-slate transition-all shadow-[4px_4px_0_#1A1A1A] active:shadow-none active:translate-x-1 active:translate-y-1 ${currentPage === i + 1 ? 'bg-pear text-slate' : 'bg-white text-slate'}`}
+                      className={`w-10 h-10 rounded-2xl font-black text-[11px] transition-all active:scale-95 ${currentPage === i + 1 ? 'bg-pear text-slate shadow-lg shadow-pear/20' : 'bg-white text-slate border border-slate/5 shadow-sm hover:bg-gray-50'}`}
                     >
                        {i + 1}
                     </button>
-                 ))}
-              </div>
-              <button 
-                onClick={() => handlePageChange(currentPage + 1)}
-                disabled={currentPage === totalPages}
-                className="p-3 bg-white border-2 border-slate rounded-xl disabled:opacity-30 hover:bg-vanilla transition-colors shadow-[4px_4px_0_#1A1A1A] active:shadow-none active:translate-x-1 active:translate-y-1"
-              >
-                 <ChevronRight size={20} />
-              </button>
-           </div>
-         )}
+                  ))}
+               </div>
+               <button 
+                 onClick={() => handlePageChange(currentPage + 1)}
+                 disabled={currentPage === totalPages}
+                 className="p-3 bg-white border border-slate/5 rounded-2xl disabled:opacity-30 hover:bg-vanilla transition-all shadow-sm hover:shadow-md active:scale-95"
+               >
+                  <ChevronRight size={20} className="text-slate" />
+               </button>
+            </div>
+          )}
 
-         {hasMore && (
-           <div className="flex justify-center pt-8">
-              <button 
-                onClick={() => loadMore()}
-                className="flex items-center gap-3 px-8 py-4 bg-pear text-slate border-2 border-slate rounded-[24px] font-black text-[11px] uppercase tracking-widest shadow-[6px_6px_0_#1A1A1A] hover-brutalist transition-all"
-              >
-                 <TrendingUp size={16} /> Cargar más del servidor
-              </button>
-           </div>
-         )}
+          {hasMore && (
+            <div className="flex justify-center pt-8">
+               <button 
+                 onClick={() => loadMore()}
+                 className="flex items-center gap-3 px-8 py-4 bg-slate text-white rounded-[24px] font-black text-[11px] uppercase tracking-widest shadow-2xl hover:bg-gray-800 transition-all active:scale-95"
+               >
+                  <TrendingUp size={16} className="text-pear" /> Cargar más del servidor
+               </button>
+            </div>
+          )}
       </div>
     </div>
   );

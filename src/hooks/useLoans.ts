@@ -97,6 +97,7 @@ export const useLoans = (userId: string | undefined) => {
   const [error, setError] = useState<string | null>(null);
   const [lastVisible, setLastVisible] = useState<QueryDocumentSnapshot<DocumentData> | null>(null);
   const [hasMore, setHasMore] = useState(true);
+  const [installments, setInstallments] = useState<Installment[]>([]);
 
   // 1. CARGA INICIAL
   const fetchInitialLoans = useCallback(async () => {
@@ -128,6 +129,37 @@ export const useLoans = (userId: string | undefined) => {
   useEffect(() => {
     fetchInitialLoans();
   }, [fetchInitialLoans]);
+
+  // FETCH ALL INSTALLMENTS (Global for Calendar/Stats)
+  useEffect(() => {
+    if (!userId || loans.length === 0) return;
+    
+    const fetchGlobalInstallments = async () => {
+      try {
+        // Collect all active/pending installments for the user
+        // Using collectionGroup if available or per-loan basis
+        // Per-loan is safer for standard Firestore rules
+        const installmentPromises = loans.map(loan => 
+          getDocs(query(collection(db, `loans/${loan.id}/installments`)))
+        );
+        
+        const snapshots = await Promise.all(installmentPromises);
+        const allInst: Installment[] = [];
+        
+        snapshots.forEach(snapshot => {
+          snapshot.docs.forEach(doc => {
+            allInst.push({ id: doc.id, ...doc.data() } as Installment);
+          });
+        });
+        
+        setInstallments(allInst);
+      } catch (err) {
+        console.error("Error fetching global installments:", err);
+      }
+    };
+
+    fetchGlobalInstallments();
+  }, [userId, loans]);
 
   // 2. PAGINACIÓN
   const loadMoreLoans = async () => {
@@ -174,16 +206,30 @@ export const useLoans = (userId: string | undefined) => {
     if (!userId) throw new Error("ID de usuario no disponible");
 
     try {
-      if (data.endDate <= data.startDate) {
-        throw new Error('La fecha fin debe ser posterior a la fecha inicio');
-      }
-
-      const diffDays = Math.ceil((data.endDate.getTime() - data.startDate.getTime()) / (1000 * 60 * 60 * 24));
-      const freqDaysMap: Record<PaymentFrequency, number> = { daily: 1, weekly: 7, monthly: 30, yearly: 365 };
-      const freqDays = freqDaysMap[data.frequency];
+      const start = new Date(data.startDate);
+      const end = new Date(data.endDate);
       
-      let numberOfInstallments = Math.ceil(diffDays / freqDays);
-      if (numberOfInstallments === 0) numberOfInstallments = 1;
+      let numberOfInstallments = 0;
+
+      if (data.frequency === 'monthly') {
+        const yearDiff = end.getFullYear() - start.getFullYear();
+        const monthDiff = end.getMonth() - start.getMonth();
+        numberOfInstallments = yearDiff * 12 + monthDiff;
+        
+        // Si el día final es mayor que el día inicial, y la diferencia es significativa (>15 días),
+        // podría considerarse un mes extra, pero si es 09 a 09, debe ser exacto.
+        // Si termina antes del día del mes de inicio, restamos uno si queremos ser estrictos, 
+        // pero usualmente se cuenta el mes en curso.
+        if (numberOfInstallments === 0) numberOfInstallments = 1;
+      } else if (data.frequency === 'yearly') {
+        numberOfInstallments = end.getFullYear() - start.getFullYear();
+        if (numberOfInstallments === 0) numberOfInstallments = 1;
+      } else {
+        const diffDays = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+        const freqDaysMap: Record<PaymentFrequency, number> = { daily: 1, weekly: 7, monthly: 30, yearly: 365 };
+        const freqDays = freqDaysMap[data.frequency];
+        numberOfInstallments = Math.max(1, Math.round(diffDays / freqDays));
+      }
 
       const totalInterest = data.amount * (data.interestRate / 100);
       const totalToPay = data.amount + totalInterest;
@@ -218,9 +264,18 @@ export const useLoans = (userId: string | undefined) => {
         }
 
         const dueDate = new Date(data.startDate);
-        dueDate.setDate(dueDate.getDate() + ((i + 1) * freqDays));
-        // Si la fecha excede endDate, ajustar a endDate
-        const finalDueDate = dueDate > data.endDate ? data.endDate : dueDate;
+        if (data.frequency === 'monthly') {
+          dueDate.setMonth(dueDate.getMonth() + (i + 1));
+        } else if (data.frequency === 'yearly') {
+          dueDate.setFullYear(dueDate.getFullYear() + (i + 1));
+        } else {
+          const freqDaysMap: Record<string, number> = { daily: 1, weekly: 7 };
+          const daysToAdd = (i + 1) * (freqDaysMap[data.frequency] || 1);
+          dueDate.setDate(dueDate.getDate() + daysToAdd);
+        }
+
+        // Si la fecha excede endDate, ajustar a endDate solo en la última cuota
+        const finalDueDate = (i === numberOfInstallments - 1) ? data.endDate : (dueDate > data.endDate ? data.endDate : dueDate);
         
         installments.push({
           dueDate: Timestamp.fromDate(finalDueDate),
@@ -764,20 +819,26 @@ export const useLoans = (userId: string | undefined) => {
           const installmentsSnap = await getDocs(installmentsQuery);
           const installmentRefs = installmentsSnap.docs.map(d => d.ref);
           
+          // REALIZAR TODAS LAS LECTURAS TRANSACCIONALES PRIMERO
+          const installmentSnaps = await Promise.all(installmentRefs.map(ref => transaction.get(ref)));
+          
           let remainingToApply = paymentAmount;
           let completedInstallmentsCount = 0;
           let affectedIndices: number[] = [];
           let totalPrincipalPaid = 0;
           let totalInterestPaid = 0;
           let anyRemainingOverdue = false;
+          
+          const installmentUpdates: { ref: any, data: any }[] = [];
 
           const rate = paymentData.currentRate || 1;
           const isIndexedVES = loanData.isIndexed && loanData.currency === 'VES' && !!paymentData.currentRate;
           const nowDt = now.toDate();
 
-          // 2. LOGIC
-          for (const ref of installmentRefs) {
-            const snap = await transaction.get(ref);
+          // 2. LOGIC (Sin escrituras directas aún)
+          for (let i = 0; i < installmentSnaps.length; i++) {
+            const snap = installmentSnaps[i];
+            const ref = installmentRefs[i];
             const inst = snap.data() as Installment;
             
             if (inst.status === 'paid') continue;
@@ -808,10 +869,13 @@ export const useLoans = (userId: string | undefined) => {
                 if (newStatus === 'paid') completedInstallmentsCount++;
                 affectedIndices.push(inst.installmentIndex + 1);
                 
-                transaction.update(ref, {
-                  status: newStatus,
-                  paidAmount: newPaidAmount,
-                  paymentDate: now
+                installmentUpdates.push({
+                   ref,
+                   data: {
+                      status: newStatus,
+                      paidAmount: newPaidAmount,
+                      paymentDate: now
+                   }
                 });
                 
                 remainingToApply = parseFloat((remainingToApply - applyToThis).toFixed(2));
@@ -826,6 +890,11 @@ export const useLoans = (userId: string | undefined) => {
                   anyRemainingOverdue = true;
                 }
             }
+          }
+
+          // APLICAR ESCRITURAS TRANSACCIONALES
+          for (const update of installmentUpdates) {
+             transaction.update(update.ref, update.data);
           }
 
           // 3. ATOMIC WRITES (Audit & Master Doc)
@@ -1037,6 +1106,7 @@ export const useLoans = (userId: string | undefined) => {
       }
     }, [userId]),
     fetchAllUserLoans: useCallback(async () => {
+      /* ... existing fetchAllUserLoans logic ... */
       if (!userId) return [];
       try {
         const q = query(
@@ -1049,6 +1119,7 @@ export const useLoans = (userId: string | undefined) => {
         console.error("Error fetching all loans for user:", err);
         return [];
       }
-    }, [userId])
+    }, [userId]),
+    installments
   };
 };

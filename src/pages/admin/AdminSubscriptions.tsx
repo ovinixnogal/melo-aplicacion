@@ -176,14 +176,14 @@ const AdminSubscriptions: React.FC = () => {
                         <div className="flex items-center justify-end gap-3">
                           <button
                             onClick={() => { setHistoryModal(u); setHistoryPage(1); }}
-                            className="p-3 bg-slate text-pear rounded-xl hover:scale-110 transition-all shadow-md group"
+                            className="p-3 bg-slate text-pear rounded-2xl hover:scale-110 active:scale-95 transition-all shadow-lg group"
                             title="Ver Historial"
                           >
                             <History size={16} />
                           </button>
                           <button
                             onClick={() => { if (window.confirm(`¿Regalar 30 días a ${u.displayName}?`)) grantFreeAccess(u.uid, adminUser?.uid || ''); }}
-                            className="px-6 py-3 bg-pear text-slate rounded-xl text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all flex items-center gap-2 shadow-lg"
+                            className="px-6 py-3 bg-pear text-slate rounded-2xl text-[10px] font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all flex items-center gap-2 shadow-xl shadow-pear/10"
                           >
                             <Gift size={14} /> Regalo 30d
                           </button>
@@ -205,9 +205,10 @@ const AdminSubscriptions: React.FC = () => {
       )}
 
       {/* HISTORY MODAL */}
+      {/* HISTORY MODAL */}
       {historyModal && (
         <div className="fixed inset-0 bg-slate/90 backdrop-blur-xl z-50 flex items-center justify-center p-4">
-           <div className="bg-white rounded-[40px] sm:rounded-[56px] w-full max-w-3xl max-h-[90vh] overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-300 border-4 border-slate flex flex-col">
+           <div className="bg-white rounded-[40px] sm:rounded-[56px] w-full max-w-3xl max-h-[90vh] overflow-hidden shadow-3xl animate-in fade-in zoom-in-95 duration-300 border border-slate/5 flex flex-col">
               <div className="p-6 sm:p-14 overflow-y-auto no-scrollbar">
                  <div className="flex flex-col sm:flex-row items-center sm:items-start justify-between gap-6 mb-10">
                     <div className="flex flex-col sm:flex-row items-center gap-6 text-center sm:text-left">
@@ -277,20 +278,30 @@ const AdminSubscriptions: React.FC = () => {
 
                  {/* Modal Pagination */}
                  {totalHistoryPages > 1 && (
-                    <div className="flex items-center justify-between mt-8 px-4">
-                       <span className="text-[9px] font-black text-gray-300 uppercase tracking-[0.2em]">Página {historyPage} de {totalHistoryPages}</span>
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-6 mt-8 px-4">
+                       <div className="flex items-center gap-2">
+                          {[...Array(totalHistoryPages)].map((_, i) => (
+                             <button
+                                key={i}
+                                onClick={() => setHistoryPage(i + 1)}
+                                className={`w-8 h-8 rounded-xl font-black text-[9px] transition-all active:scale-90 ${historyPage === i + 1 ? 'bg-slate text-pear shadow-lg' : 'bg-gray-100 text-gray-400 hover:bg-gray-200'}`}
+                             >
+                                {i + 1}
+                             </button>
+                          ))}
+                       </div>
                        <div className="flex items-center gap-3">
                           <button 
                              disabled={historyPage === 1} 
                              onClick={() => setHistoryPage(p => p - 1)}
-                             className="p-3 bg-slate text-pear rounded-2xl disabled:opacity-20 transition-all shadow-lg"
+                             className="p-3 bg-white border border-slate/5 text-slate rounded-2xl disabled:opacity-20 transition-all shadow-sm hover:shadow-md active:scale-90"
                           >
                              <ChevronLeft size={18} />
                           </button>
                           <button 
                              disabled={historyPage === totalHistoryPages} 
                              onClick={() => setHistoryPage(p => p + 1)}
-                             className="p-3 bg-slate text-pear rounded-2xl disabled:opacity-20 transition-all shadow-lg"
+                             className="p-3 bg-white border border-slate/5 text-slate rounded-2xl disabled:opacity-20 transition-all shadow-sm hover:shadow-md active:scale-90"
                           >
                              <ChevronRight size={18} />
                           </button>

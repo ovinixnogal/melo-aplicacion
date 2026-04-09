@@ -26,7 +26,6 @@ export interface Client {
   name: string;
   email?: string;
   phone?: string;
-  photoURL?: string;
   userId: string;
   createdAt: any;
 }

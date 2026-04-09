@@ -32,9 +32,6 @@ const ClientActionSheet: React.FC<ClientActionSheetProps> = ({
 
   if (!client) return null;
 
-  const getInitials = (name: string) => {
-    return name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
-  };
 
   // GESTOS TÁCTILES: Swipe to Close
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -91,8 +88,8 @@ const ClientActionSheet: React.FC<ClientActionSheetProps> = ({
 
          {/* Client Brief */}
          <div className="flex items-center gap-4 mb-8 pb-6 border-b border-gray-50">
-            <div className="w-14 h-14 bg-[#1A1A1A] text-[#E2FF3B] rounded-2xl flex items-center justify-center font-black text-lg shadow-xl">
-               {getInitials(client.name)}
+            <div className="w-14 h-14 bg-[#1A1A1A] text-[#E2FF3B] rounded-2xl flex items-center justify-center shadow-xl">
+               <User size={28} />
             </div>
             <div className="flex-1 min-w-0">
                <h3 className="text-xl font-black italic uppercase leading-none truncate text-[#1A1A1A]">{client.name}</h3>

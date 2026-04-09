@@ -6,7 +6,9 @@ import {
   Briefcase,
   History,
   LayoutGrid,
-  Clock
+  Clock,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useExchangeRate } from '../hooks/useExchangeRate';
@@ -191,14 +193,14 @@ const HistoryPage: React.FC = () => {
   }
 
   return (
-    <div className="p-4 md:p-12 space-y-6 md:space-y-12 animate-in slide-in-from-bottom-4 duration-700 pb-28 md:pb-12 max-w-[1600px] mx-auto">
+    <div className="space-y-6 md:space-y-12 animate-in slide-in-from-bottom-4 duration-700 pb-28 md:pb-12 max-w-[1600px] mx-auto">
       
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
         <div className="space-y-4">
            <div className="flex items-center gap-3">
               <div className="p-3 bg-slate text-pear rounded-2xl shadow-xl shadow-pear/10 transform -rotate-3"><History size={24} /></div>
-              <h1 className="text-4xl md:text-6xl font-black text-slate tracking-tighter italic leading-none uppercase">
+              <h1 className="text-3xl md:text-5xl font-black text-slate tracking-tighter italic leading-none uppercase">
                 Historial General
                 <span className="text-pear">.</span>
               </h1>
@@ -229,43 +231,43 @@ const HistoryPage: React.FC = () => {
       </div>
 
       {/* Mini Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 md:gap-8">
-         <Card className="!p-5 md:!p-8 bg-white border-2 border-slate/5 shadow-sm group hover:-translate-y-1 transition-all duration-300 relative overflow-hidden h-full">
-            <div className="flex items-center justify-between mb-4 md:mb-6">
-               <div className="p-2 bg-slate/5 text-slate rounded-xl"><ArrowDownLeft size={16} strokeWidth={3} /></div>
-               <span className="text-[8px] md:text-[10px] font-black uppercase tracking-[0.2em] text-slate/30">Ingresos</span>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-8">
+         <Card className="!p-6 md:!p-8 bg-white border border-slate/5 shadow-xl group transition-all duration-300 relative overflow-hidden h-full rounded-[32px] sm:rounded-[40px]">
+            <div className="flex items-center justify-between mb-6">
+               <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl"><ArrowDownLeft size={20} strokeWidth={3} /></div>
+               <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate/30">Ingresos</span>
             </div>
             <div>
-               <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1">Total Entradas</p>
-               <p className="text-xl md:text-4xl font-black text-slate tracking-tighter italic leading-none truncate">
-                  ${stats.ingresos.toLocaleString()}
+               <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2 italic">Total Entradas (Consolidado)</p>
+               <p className="text-2xl md:text-3xl lg:text-4xl font-[1000] text-slate tracking-tighter italic leading-none break-all">
+                  ${stats.ingresos.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                </p>
             </div>
          </Card>
 
-         <Card className="!p-5 md:!p-8 bg-white border-2 border-slate/5 shadow-sm group hover:-translate-y-1 transition-all duration-300 relative overflow-hidden h-full">
-            <div className="flex items-center justify-between mb-4 md:mb-6">
-               <div className="p-2 bg-slate/5 text-slate rounded-xl"><ArrowUpRight size={16} strokeWidth={3} /></div>
-               <span className="text-[8px] md:text-[10px] font-black uppercase tracking-[0.2em] text-slate/30">Egresos</span>
+         <Card className="!p-6 md:!p-8 bg-white border border-slate/5 shadow-xl group transition-all duration-300 relative overflow-hidden h-full rounded-[32px] sm:rounded-[40px]">
+            <div className="flex items-center justify-between mb-6">
+               <div className="p-3 bg-rose-50 text-rose-500 rounded-xl"><ArrowUpRight size={20} strokeWidth={3} /></div>
+               <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate/30">Egresos</span>
             </div>
             <div>
-               <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1">Total Salidas</p>
-               <p className="text-xl md:text-4xl font-black text-slate tracking-tighter italic leading-none truncate">
-                  ${stats.egresos.toLocaleString()}
+               <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2 italic">Total Salidas (Consolidado)</p>
+               <p className="text-2xl md:text-3xl lg:text-4xl font-[1000] text-slate tracking-tighter italic leading-none break-all">
+                  ${stats.egresos.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                </p>
             </div>
          </Card>
 
-         <Card className="col-span-2 lg:col-span-1 !p-5 md:!p-8 bg-slate text-white shadow-xl group hover:scale-[1.01] transition-all relative overflow-hidden h-full border-2 border-slate/10">
-            <div className="absolute right-0 bottom-0 w-32 h-32 bg-pear/10 rounded-full blur-3xl opacity-20"></div>
-            <div className="flex items-center justify-between mb-4 md:mb-6 relative z-10">
-               <div className="p-2 bg-pear text-slate rounded-xl"><Briefcase size={16} strokeWidth={3} /></div>
-               <span className="text-[8px] md:text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Liquidación</span>
+         <Card className="sm:col-span-2 lg:col-span-1 !p-6 md:!p-8 bg-slate text-white shadow-2xl group transition-all relative overflow-hidden h-full border border-slate/10 rounded-[32px] sm:rounded-[40px]">
+            <div className="absolute right-[-10%] bottom-[-10%] w-32 h-32 bg-pear/10 rounded-full blur-3xl opacity-20"></div>
+            <div className="flex items-center justify-between mb-6 relative z-10">
+               <div className="p-3 bg-pear text-slate rounded-xl"><Briefcase size={20} strokeWidth={3} /></div>
+               <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/30">Liquidación</span>
             </div>
             <div className="relative z-10">
-               <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Flujo Neto de Capital</p>
-               <p className={`text-2xl md:text-4xl font-black tracking-tighter italic leading-none ${stats.balance >= 0 ? 'text-pear' : 'text-rose-400'}`}>
-                  {stats.balance >= 0 ? '+' : '-'}${Math.abs(stats.balance).toLocaleString()}
+               <p className="text-[10px] font-black text-white/40 uppercase tracking-widest mb-2 italic">Flujo Neto de Capital</p>
+               <p className={`text-2xl md:text-3xl lg:text-4xl font-[1000] tracking-tighter italic leading-none break-all ${stats.balance >= 0 ? 'text-pear' : 'text-rose-400'}`}>
+                  {stats.balance >= 0 ? '+' : '-'}${Math.abs(stats.balance).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                </p>
             </div>
          </Card>
@@ -279,13 +281,13 @@ const HistoryPage: React.FC = () => {
                <input 
                  type="text" 
                  placeholder="Buscar movimiento..."
-                 className="w-full pl-16 pr-8 py-4 md:py-5 bg-vanilla/50 border-2 border-transparent focus:border-slate focus:bg-white rounded-[24px] md:rounded-[28px] text-sm font-bold transition-all outline-none"
+                 className="w-full pl-16 pr-8 py-4 md:py-5 bg-vanilla/50 border-2 border-transparent focus:border-slate focus:bg-white rounded-[24px] md:rounded-[28px] text-sm font-bold transition-all outline-none placeholder:text-slate/40"
                  value={searchTerm}
                  onChange={(e) => setSearchTerm(e.target.value)}
                />
             </div>
-            <div className="flex items-center gap-3 text-[10px] font-black text-gray-300 uppercase tracking-widest">
-               <Clock size={16} /> {filteredRecords.length} movimientos encontrados
+            <div className="flex items-center gap-3 text-[10px] font-black text-slate/40 uppercase tracking-widest">
+               <Clock size={16} className="text-pear" /> {filteredRecords.length} movimientos encontrados
             </div>
          </div>
 
@@ -333,46 +335,46 @@ const HistoryPage: React.FC = () => {
          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-left border-collapse">
                <thead>
-                  <tr className="border-b border-gray-50">
-                     <th className="px-10 py-8 text-[10px] font-black uppercase tracking-[0.3em] text-gray-300">Fecha</th>
-                     <th className="px-10 py-8 text-[10px] font-black uppercase tracking-[0.3em] text-gray-300">Deudor / Concepto</th>
-                     <th className="px-10 py-8 text-[10px] font-black uppercase tracking-[0.3em] text-gray-300">Tipo</th>
-                     <th className="px-10 py-8 text-[10px] font-black uppercase tracking-[0.3em] text-gray-300">Monto</th>
-                     <th className="px-10 py-8 text-[10px] font-black uppercase tracking-[0.3em] text-gray-300 text-right">Método</th>
+                  <tr className="border-b border-gray-50 bg-vanilla/30">
+                     <th className="px-6 py-6 text-[10px] font-black uppercase tracking-[0.3em] text-slate/50">Fecha</th>
+                     <th className="px-6 py-6 text-[10px] font-black uppercase tracking-[0.3em] text-slate/50">Deudor / Concepto</th>
+                     <th className="px-6 py-6 text-[10px] font-black uppercase tracking-[0.3em] text-slate/50 text-center">Tipo</th>
+                     <th className="px-6 py-6 text-[10px] font-black uppercase tracking-[0.3em] text-slate/50">Monto</th>
+                     <th className="px-6 py-6 text-[10px] font-black uppercase tracking-[0.3em] text-slate/50 text-right">Método</th>
                   </tr>
                </thead>
                <tbody className="divide-y divide-gray-50 text-slate">
-                  {currentRecords.map((r) => (
-                    <tr key={r.id} className="hover:bg-vanilla/30 transition-all group">
-                       <td className="px-10 py-7">
+                   {currentRecords.map((r) => (
+                    <tr key={r.id} className="hover:bg-vanilla/40 transition-all group">
+                       <td className="px-6 py-6">
                           <div className="flex flex-col">
-                             <span className="font-black text-[13px] tracking-tight">{formatDate(r.date)}</span>
-                             <span className="text-[9px] font-black text-gray-300 uppercase tracking-widest mt-1">Ref: {r.id.substring(0,6)}</span>
+                             <span className="font-black text-[13px] tracking-tight text-slate">{formatDate(r.date)}</span>
+                             <span className="text-[9px] font-bold text-slate/30 uppercase tracking-widest mt-0.5">Ref: {r.id.substring(0,6)}</span>
                           </div>
                        </td>
-                       <td className="px-10 py-7">
+                       <td className="px-6 py-6">
                           <div className="flex items-center gap-4">
-                             <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xs font-black shadow-inner ${r.type === 'ingreso' ? 'bg-emerald-50 text-emerald-500' : 'bg-rose-50 text-rose-500'}`}>
+                             <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-[10px] font-black shadow-inner ${r.type === 'ingreso' ? 'bg-emerald-50 text-emerald-500' : 'bg-rose-50 text-rose-500'}`}>
                                 {r.clientName.substring(0, 2).toUpperCase()}
                              </div>
-                             <div className="flex flex-col">
-                                <span className="font-black text-sm uppercase italic tracking-tighter truncate max-w-[200px]">{r.clientName}</span>
-                                <span className="text-[10px] font-medium text-gray-400 uppercase tracking-widest">{r.concept}</span>
+                             <div className="flex flex-col min-w-0">
+                                <span className="font-black text-sm uppercase italic tracking-tighter truncate max-w-[150px] text-slate">{r.clientName}</span>
+                                <span className="text-[9px] font-bold text-slate/40 uppercase tracking-widest truncate max-w-[150px]">{r.concept}</span>
                              </div>
                           </div>
                        </td>
-                       <td className="px-10 py-7">
-                          <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest ${r.type === 'ingreso' ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'bg-rose-500 text-white shadow-lg shadow-rose-500/20'}`}>
+                       <td className="px-6 py-6 text-center">
+                          <span className={`px-4 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest ${r.type === 'ingreso' ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'bg-rose-500 text-white shadow-lg shadow-rose-500/20'}`}>
                              {r.type}
                           </span>
                        </td>
-                       <td className="px-10 py-7">
-                          <span className={`text-xl font-black italic tracking-tighter ${r.type === 'ingreso' ? 'text-emerald-500' : 'text-slate'}`}>
+                       <td className="px-6 py-6">
+                          <span className={`text-lg font-[1000] italic tracking-tighter leading-none ${r.type === 'ingreso' ? 'text-emerald-600' : 'text-slate'}`}>
                              {r.type === 'ingreso' ? '+' : '-'}{r.currency === 'USD' ? '$' : 'Bs.'}{r.amount.toLocaleString()}
                           </span>
                        </td>
-                       <td className="px-10 py-7 text-right">
-                          <span className="px-4 py-2 bg-gray-50 text-[10px] font-black uppercase tracking-widest text-gray-400 rounded-xl group-hover:text-slate transition-colors">
+                       <td className="px-6 py-6 text-right">
+                          <span className="px-3 py-1.5 bg-vanilla text-[9px] font-black uppercase tracking-widest text-slate/40 rounded-lg group-hover:text-slate transition-colors border border-slate/5">
                              {r.method}
                           </span>
                        </td>
@@ -393,26 +395,39 @@ const HistoryPage: React.FC = () => {
             </table>
          </div>
          
-         {/* Paginación */}
+         {/* Premium Pagination */}
          {totalPages > 1 && (
-            <div className="px-8 py-6 border-t border-gray-50 flex items-center justify-between bg-white text-[10px] font-black uppercase tracking-widest text-gray-400">
-               <button 
-                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                  disabled={currentPage === 1}
-                  className="px-6 py-3 rounded-xl transition-all disabled:opacity-30 hover:bg-slate hover:text-white"
-               >
-                  Anterior
-               </button>
-               <span>
+            <div className="px-8 py-10 border-t border-gray-50 flex flex-col sm:flex-row items-center justify-between gap-6 bg-white">
+               <div className="flex items-center gap-2">
+                  <button 
+                     onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                     disabled={currentPage === 1}
+                     className="p-3 bg-white border border-slate/5 text-slate rounded-2xl disabled:opacity-30 hover:bg-vanilla transition-all shadow-sm hover:shadow-md active:scale-90"
+                  >
+                     <ChevronLeft size={20} className="text-slate" />
+                  </button>
+                  <div className="flex gap-2">
+                     {[...Array(totalPages)].map((_, i) => (
+                        <button
+                           key={i}
+                           onClick={() => setCurrentPage(i + 1)}
+                           className={`w-10 h-10 rounded-2xl font-black text-[11px] transition-all active:scale-95 ${currentPage === i + 1 ? 'bg-pear text-slate shadow-lg shadow-pear/20' : 'bg-white text-slate border border-slate/5 shadow-sm hover:bg-gray-50'}`}
+                        >
+                           {i + 1}
+                        </button>
+                     ))}
+                  </div>
+                  <button 
+                     onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                     disabled={currentPage === totalPages}
+                     className="p-3 bg-white border border-slate/5 text-slate rounded-2xl disabled:opacity-30 hover:bg-vanilla transition-all shadow-sm hover:shadow-md active:scale-90"
+                  >
+                     <ChevronRight size={20} className="text-slate" />
+                  </button>
+               </div>
+               <div className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-300">
                   Página <span className="text-slate">{currentPage}</span> de {totalPages}
-               </span>
-               <button 
-                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                  disabled={currentPage === totalPages}
-                  className="px-6 py-3 rounded-xl transition-all disabled:opacity-30 hover:bg-slate hover:text-white"
-               >
-                  Siguiente
-               </button>
+               </div>
             </div>
          )}
       </div>

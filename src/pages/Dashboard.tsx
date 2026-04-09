@@ -57,9 +57,9 @@ const Dashboard: React.FC = () => {
   }
 
   const mainStats = [
-    { name: 'Prestado (USD)', value: stats.totalLentUSD, icon: CreditCard, color: 'text-indigo-600', bg: 'bg-indigo-50', symbol: '$' },
-    { name: 'Recuperado (USD)', value: stats.totalReceivedUSD - stats.totalEarnedUSD, icon: HandCoins, color: 'text-emerald-600', bg: 'bg-emerald-50', symbol: '$' },
-    { name: 'Ganancias (USD)', value: stats.totalEarnedUSD, icon: TrendingUp, color: 'text-pear', bg: 'bg-slate', symbol: '$' },
+    { name: 'Total Prestado ($)', value: stats.totalLentUSD, icon: CreditCard, color: 'text-indigo-600', bg: 'bg-indigo-50', symbol: '$' },
+    { name: 'Total Recuperado ($)', value: stats.totalReceivedUSD - stats.totalEarnedUSD, icon: HandCoins, color: 'text-emerald-600', bg: 'bg-emerald-50', symbol: '$' },
+    { name: 'Ganancias ($)', value: stats.totalEarnedUSD, icon: TrendingUp, color: 'text-pear', bg: 'bg-slate', symbol: '$' },
     { name: 'Préstamos Activos', value: stats.activeLoansCount, icon: Briefcase, color: 'text-orange-600', bg: 'bg-orange-50', symbol: '' },
   ];
 
@@ -70,21 +70,21 @@ const Dashboard: React.FC = () => {
       <div className="flex flex-col md:flex-row flex-wrap gap-6 md:items-end justify-between">
         <div className="space-y-1 min-w-[200px]">
             <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate tracking-tight italic uppercase leading-[0.9]">
-                Dashboard <span className="text-pear">Overview</span>
+                Resumen <span className="text-pear">General</span>
             </h1>
-            <p className="text-gray-400 font-bold text-[10px] uppercase tracking-widest leading-none">Resumen ejecutivo de tu portafolio</p>
+            <p className="text-gray-400 font-bold text-[10px] uppercase tracking-widest leading-none">Visión general de tu portafolio</p>
         </div>
 
         {/* Dynamic Capital Summary */}
-        <div className="flex items-center gap-3 shrink-0 overflow-x-auto no-scrollbar pb-2 lg:pb-0">
+        <div className="flex items-center gap-3 shrink-0 overflow-x-auto md:overflow-x-visible no-scrollbar pb-2 md:pb-0">
             <div 
               onClick={() => navigate('/capital')}
               className="flex-shrink-0 min-w-[130px] p-3.5 sm:p-4 bg-slate text-white rounded-[24px] border border-slate shadow-xl hover:scale-105 transition-all cursor-pointer group"
             >
                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-pear text-slate rounded-xl"><DollarSign size={14} strokeWidth={3} /></div>
+                   <div className="p-2 bg-pear text-slate rounded-xl"><DollarSign size={14} strokeWidth={3} /></div>
                   <div>
-                    <p className="text-[7px] font-black uppercase text-white/40 tracking-widest leading-none mb-1">Disponible USD</p>
+                    <p className="text-[7px] font-black uppercase text-white/40 tracking-widest leading-none mb-1">Disponible $</p>
                     <p className="text-base sm:text-lg font-black tracking-tighter leading-none">${balances.USD.toLocaleString()}</p>
                   </div>
                </div>
@@ -97,7 +97,7 @@ const Dashboard: React.FC = () => {
                   <div className="p-2 bg-slate text-pear rounded-xl"><Wallet size={14} strokeWidth={3} /></div>
                   <div>
                     <div className="flex items-center gap-2 mb-1">
-                        <p className="text-[7px] font-black uppercase text-slate/40 tracking-widest leading-none">Disponible VES</p>
+                        <p className="text-[7px] font-black uppercase text-slate/40 tracking-widest leading-none">Disponible Bs.</p>
                         {exchangeRate && <span className="text-[7px] font-black bg-slate/10 px-1 rounded">≈ ${((balances.VES || 0) / (exchangeRate.rate || 1)).toFixed(1)}</span>}
                     </div>
                     <p className="text-base sm:text-lg font-black tracking-tighter leading-none">Bs. {balances.VES.toLocaleString()}</p>
@@ -198,7 +198,10 @@ const Dashboard: React.FC = () => {
                 </div>
             </div>
 
-            <div className="bg-vanilla p-8 rounded-[40px] border-2 border-slate/5 group hover:bg-white hover:border-pear transition-all flex items-center gap-6">
+            <div 
+              onClick={() => navigate('/calendario')}
+              className="bg-vanilla p-8 rounded-[40px] border-2 border-slate/5 group hover:bg-white hover:border-pear transition-all flex items-center gap-6 cursor-pointer"
+            >
                 <div className="p-4 bg-white rounded-2xl shadow-inner group-hover:scale-110 transition-transform">
                    <Calendar size={24} className="text-slate" />
                 </div>

@@ -316,7 +316,7 @@ const AdminPayments: React.FC = () => {
                              value={formNotes}
                              onChange={e => setFormNotes(e.target.value)}
                              placeholder="Ej. Transferencia Banesco #98127, Binance Pay, Efectivo..."
-                             className="w-full px-6 py-5 bg-white border-2 border-slate/5 rounded-[28px] text-sm font-bold placeholder:text-gray-200 focus:outline-none focus:border-pear transition-all h-32 resize-none"
+                             className="w-full px-6 py-5 bg-white border-2 border-slate/5 rounded-[28px] text-sm font-bold text-slate placeholder:text-gray-400 focus:outline-none focus:border-pear transition-all h-32 resize-none"
                           />
                        </div>
 

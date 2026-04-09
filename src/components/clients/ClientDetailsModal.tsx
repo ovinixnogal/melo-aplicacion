@@ -9,7 +9,8 @@ import {
   History,
   ShieldCheck,
   ArrowLeft,
-  LayoutGrid
+  LayoutGrid,
+  User
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLoans } from '../../hooks/useLoans';
@@ -107,9 +108,6 @@ const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
 
   if (!client) return null;
 
-  const getInitials = (name: string) => {
-    return name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
-  };
 
   const formatDate = (timestamp: any) => {
     if (!timestamp) return 'No registrado';
@@ -141,8 +139,8 @@ const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
             {/* Quick Profile Summary Card */}
             <Card hoverable={false} className="!p-6 md:!p-8">
                <div className="flex flex-col md:flex-row gap-6 md:gap-8 items-center md:items-start">
-                  <div className="w-24 h-24 bg-slate text-pear rounded-[30px] flex items-center justify-center text-3xl font-black shadow-2xl rotate-3">
-                     {getInitials(client.name)}
+                  <div className="w-24 h-24 bg-slate text-pear rounded-[30px] flex items-center justify-center shadow-2xl rotate-3">
+                     <User size={48} strokeWidth={2.5} />
                   </div>
                   
                   <div className="flex-1 w-full space-y-4">

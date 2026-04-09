@@ -27,7 +27,7 @@ type ClientFormValues = z.infer<typeof clientSchema>;
 interface ClientModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: ClientFormValues & { photoURL?: string }) => Promise<void>;
+  onSubmit: (data: ClientFormValues) => Promise<void>;
   initialData?: Client | null;
   mode?: 'add' | 'edit';
 }
@@ -66,9 +66,7 @@ const ClientModal: React.FC<ClientModalProps> = ({
     if (!user) return;
     setLoading(true);
     try {
-      let photoURL = initialData?.photoURL || '';
-
-      await onSubmit({ ...data, photoURL });
+      await onSubmit(data);
       reset();
       onClose();
     } catch (error) {

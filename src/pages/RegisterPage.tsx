@@ -87,31 +87,28 @@ const RegisterPage: React.FC = () => {
 
   return (
     <div className="auth-root">
-      <div className="auth-grain" />
-
-      {/* Background Blobs */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-20">
-        <div className="absolute top-[10%] left-[-10%] w-[600px] h-[600px] bg-emerald-100/40 rounded-full blur-[120px]"></div>
-        <div className="absolute bottom-[10%] right-[-15%] w-[450px] h-[450px] bg-pear/20 rounded-full blur-[100px]"></div>
-      </div>
+      {/* Glow Effects */}
+      <div className="glow-effect" style={{ top: '5%', left: '-5%', width: '500px', height: '500px', opacity: 0.08 }}></div>
+      <div className="glow-effect" style={{ bottom: '10%', right: '0%', width: '400px', height: '400px', opacity: 0.04 }}></div>
 
       <div className="auth-card max-w-xl !p-10 md:!p-16 animate-in fade-in zoom-in duration-500">
-        <Link to="/" className="back-link mb-8 inline-flex items-center gap-2">
-           <ArrowRight className="rotate-180" size={14} /> Volver
+        <Link to="/" className="back-link mb-8 inline-flex items-center gap-2 !text-white/40 hover:!text-pear transition-colors">
+          <ArrowRight className="rotate-180" size={14} /> Volver al Inicio
         </Link>
 
         <div className="auth-logo-wrap">
           <div className="auth-logo-icon">
-             <span className="text-3xl font-black italic">M</span>
+             <span className="text-3xl font-[1000] italic">M</span>
           </div>
-          <h1 className="auth-title underline decoration-pear decoration-8 underline-offset-4">
-             Registro
+          <h1 className="auth-title">
+             Crea tu <br />
+             <span className="text-pear text-glow">Cuenta.</span>
           </h1>
-          <p className="auth-subtitle">Únete a MELO</p>
+          <p className="auth-subtitle">Únete al Ecosistema Melo</p>
         </div>
 
         {error && (
-          <div className="mb-10 p-5 bg-rose-50 text-rose-600 text-[10px] font-black uppercase tracking-widest rounded-2xl border-2 border-slate flex items-center gap-3 animate-shake shadow-[4px_4px_0_#1A1A1A]">
+          <div className="mb-10 p-5 bg-rose-500/10 text-rose-500 text-[10px] font-black uppercase tracking-widest rounded-2xl border border-rose-500/20 flex items-center gap-3 animate-shake">
               <AlertCircle size={18} />
               {error}
           </div>
@@ -124,6 +121,7 @@ const RegisterPage: React.FC = () => {
             icon={<User size={18} />}
             error={errors.fullName?.message}
             {...register('fullName')}
+            className="dark-input"
           />
 
           <Input
@@ -133,6 +131,7 @@ const RegisterPage: React.FC = () => {
             icon={<Mail size={18} />}
             error={errors.email?.message}
             {...register('email')}
+            className="dark-input"
           />
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -144,11 +143,12 @@ const RegisterPage: React.FC = () => {
                 icon={<Lock size={18} />}
                 error={errors.password?.message}
                 {...register('password')}
+                className="dark-input"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-6 top-[54px] text-gray-400 hover:text-slate transition-colors focus:outline-none"
+                className="absolute right-6 top-[54px] text-white/20 hover:text-pear transition-colors focus:outline-none"
               >
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
@@ -161,6 +161,7 @@ const RegisterPage: React.FC = () => {
               icon={<Lock size={18} />}
               error={errors.confirmPassword?.message}
               {...register('confirmPassword')}
+              className="dark-input"
             />
           </div>
 
@@ -185,10 +186,16 @@ const RegisterPage: React.FC = () => {
               Entra aquí
             </Link>
           </p>
-          <Link to="/terminos" className="text-[10px] font-black uppercase tracking-widest text-slate/40 hover:text-slate transition-colors">
+          <Link to="/terminos" className="text-[10px] font-black uppercase tracking-widest text-white/10 hover:text-pear transition-colors">
             Términos y Condiciones
           </Link>
         </div>
+      </div>
+
+      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 opacity-10 pointer-events-none hidden md:block">
+        <span className="text-[10px] font-black tracking-[0.5em] uppercase text-white border-t border-white/20 pt-4">
+          Auth Platform v2.0 | SECURED
+        </span>
       </div>
     </div>
   );

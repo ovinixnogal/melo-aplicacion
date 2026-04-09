@@ -38,6 +38,7 @@ export default defineConfig({
       'react-router-dom',
       'react-hook-form',
       'recharts',
+      'zod'
     ],
   },
   build: {

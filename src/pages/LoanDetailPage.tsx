@@ -1,13 +1,11 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { 
-  CreditCard,
   AlertCircle,
   ArrowLeft,
   CheckCircle2,
   Clock,
   TrendingUp,
-  PlusCircle,
   FileText,
   Trash2,
   Edit2,
@@ -43,11 +41,20 @@ const LoanDetailPage: React.FC = () => {
 
   const { exchangeRate } = useExchangeRate();
 
+  const [activeTab, setActiveTab] = useState<'cronograma' | 'pagos' | 'abono'>('cronograma');
+
   // Modal States
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
   const [showEditModal, setShowEditModal] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+
+  // Payment Form States
+  const [paymentAmount, setPaymentAmount] = useState<string>('');
+  const [paymentCurrency, setPaymentCurrency] = useState<'USD' | 'VES'>('USD');
+  const [paymentMethod, setPaymentMethod] = useState<string>('Efectivo USD');
+  const [paymentNote, setPaymentNote] = useState('');
+  const [selectedInstallmentIndices, setSelectedInstallmentIndices] = useState<number[]>([]);
 
   // Edit Form State
   const [editForm, setEditForm] = useState({
@@ -86,11 +93,30 @@ const LoanDetailPage: React.FC = () => {
     fetchLoanData();
   }, [fetchLoanData]);
 
-  // Form State
-  const [paymentAmount, setPaymentAmount] = useState<string>('');
-  const [paymentCurrency, setPaymentCurrency] = useState<'USD' | 'VES'>('USD');
-  const [paymentMethod, setPaymentMethod] = useState<string>('Efectivo USD');
-  const [paymentNote, setPaymentNote] = useState('');
+  // Quick selection logic
+  const toggleInstallmentSelection = (index: number) => {
+    let newSelection = [...selectedInstallmentIndices];
+    if (newSelection.includes(index)) {
+      newSelection = newSelection.filter(i => i !== index);
+    } else {
+      // Ensure we select in order? Not strictly necessary but useful
+      newSelection.push(index);
+    }
+    setSelectedInstallmentIndices(newSelection);
+    
+    // Calculate new amount
+    const totalSelected = newSelection.reduce((sum, idx) => {
+      const inst = installments[idx];
+      const rate = (loan?.isIndexed && loan?.currency === 'VES') ? (exchangeRate?.rate || 1) : 1;
+      const realAmount = (loan?.isIndexed && loan?.currency === 'VES' && inst.amountUSD) 
+        ? (inst.amountUSD * rate) 
+        : inst.amount;
+      return sum + (realAmount - (inst.paidAmount || 0));
+    }, 0);
+
+    setPaymentAmount(totalSelected > 0 ? totalSelected.toFixed(2) : '');
+  };
+
 
   useEffect(() => {
     if (loan?.currency) {
@@ -139,6 +165,7 @@ const LoanDetailPage: React.FC = () => {
         note: paymentNote,
         currentRate: exchangeRate?.rate
       });
+      setSelectedInstallmentIndices([]);
       setPaymentAmount('');
       setPaymentNote('');
       setRefreshHistory(prev => prev + 1);
@@ -205,7 +232,7 @@ const LoanDetailPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="p-4 md:p-12 space-y-12 animate-in fade-in duration-500 pb-20">
+      <div className="space-y-12 animate-in fade-in duration-500 pb-20">
         <div className="space-y-4">
            <Skeleton className="h-4 w-32" />
            <Skeleton className="h-16 w-full max-w-xl" />
@@ -233,383 +260,361 @@ const LoanDetailPage: React.FC = () => {
   }
 
   return (
-    <div className="p-4 md:p-12 space-y-8 md:space-y-12 animate-in slide-in-from-bottom-4 duration-700 pb-20">
+    <div className="space-y-8 animate-in fade-in duration-700 pb-32 max-w-[1600px] mx-auto">
       
-      {/* 1. Header & Navigation */}
-      <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
-        <div className="space-y-4">
-          <Link to="/prestamos" className="inline-flex items-center gap-2 text-gray-400 hover:text-slate font-black text-[10px] uppercase tracking-widest transition-all group">
-             <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" /> Volver al Listado
-          </Link>
-          <div className="flex flex-col md:flex-row md:items-start gap-4">
-             <h1 className="text-4xl md:text-6xl lg:text-7xl font-black text-slate tracking-tighter italic leading-[0.9] uppercase underline decoration-pear decoration-8 underline-offset-8 break-words max-w-full">
-               {loan.clientName}
-             </h1>
-             <div className="flex gap-2 mt-4 md:mt-2 shrink-0">
-                <span className={`px-5 py-2 rounded-full text-[11px] font-black uppercase tracking-[0.2em] border-2 shadow-xl ${
-                  loan.status === 'completed' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
-                  loan.status === 'cancelled' ? 'bg-rose-50 text-rose-500 border-rose-100' :
-                  loan.status === 'overdue' ? 'bg-rose-500 text-white border-rose-600 shadow-rose-200' :
-                  'bg-pear text-slate border-pear/30 shadow-pear/10'
-                }`}>
-                  {loan.status === 'completed' ? 'Finalizado' : 
-                   loan.status === 'cancelled' ? 'Cancelado / Fallido' : 
-                   loan.status === 'overdue' ? '⚡ Vencido (Mora)' : 'Activo'}
-                </span>
-             </div>
-          </div>
-        </div>
-        
-        {/* Actions Button Group */}
-        <div className="flex gap-2">
-           {loan.status === 'active' && !hasPayments && (
-              <Button 
-                variant="outline"
-                size="sm"
-                onClick={() => setShowEditModal(true)}
-                leftIcon={<Edit2 size={16} />}
-              >
-                Editar
-              </Button>
-           )}
-           {(loan.status === 'active' || loan.status === 'overdue') && (
-               <>
-                 {hasPayments ? (
-                   <Button 
-                     variant="ghost"
-                     size="sm"
-                     onClick={() => setShowCancelModal(true)}
-                     leftIcon={<Ban size={16} />}
-                     className="text-rose-500 hover:bg-rose-50"
-                   >
-                     Cancelar Préstamo
-                   </Button>
-                 ) : (
-                   <Button 
-                     variant="ghost"
-                     size="sm"
-                     onClick={handleDelete}
-                     leftIcon={<Trash2 size={16} />}
-                     className="text-rose-500 hover:bg-rose-50"
-                   >
-                     Eliminar Definitivamente
-                   </Button>
-                 )}
-               </>
-           )}
-        </div>
+      {/* ─── 1. BREADCRUMBS & TOP ACTIONS ─── */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+         <Link to="/prestamos" className="inline-flex items-center gap-2 text-gray-400 hover:text-slate font-black text-[10px] uppercase tracking-widest transition-all group">
+            <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" /> Listado de préstamos
+         </Link>
+         
+         <div className="flex items-center gap-2">
+            {loan.status === 'active' && !hasPayments && (
+               <button onClick={() => setShowEditModal(true)} className="p-3 bg-white border border-slate/5 text-slate rounded-xl hover:bg-slate hover:text-white transition-all shadow-sm"><Edit2 size={16} /></button>
+            )}
+            {(loan.status === 'active' || loan.status === 'overdue') && (
+               hasPayments ? (
+                 <button onClick={() => setShowCancelModal(true)} className="p-3 bg-white border border-slate/5 text-rose-500 rounded-xl hover:bg-rose-500 hover:text-white transition-all shadow-sm" title="Anular"><Ban size={16} /></button>
+               ) : (
+                 <button onClick={handleDelete} className="p-3 bg-white border border-slate/5 text-rose-500 rounded-xl hover:bg-rose-500 hover:text-white transition-all shadow-sm" title="Eliminar"><Trash2 size={16} /></button>
+               )
+            )}
+         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+      {/* ─── 2. HERO DASHBOARD ─── */}
+      <div className="bg-slate rounded-[40px] md:rounded-[56px] p-8 md:p-12 text-white relative overflow-hidden shadow-3xl">
+         {/* Background accent */}
+         <div className="absolute top-0 right-0 w-1/3 h-full bg-pear/10 skew-x-[-20deg] translate-x-1/2"></div>
          
-         {/* LEFT: Payment Form & Summary */}
-         <div className="lg:col-span-4 space-y-8">
-            
-            {/* Payment Panel - Hide if cancelled/completed */}
-            {loan.status === 'active' ? (
-              <Card className="!p-10 !rounded-[48px] border-4 border-slate shadow-2xl space-y-10">
-                <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-pear rounded-2xl flex items-center justify-center text-slate shadow-inner"><PlusCircle size={24} /></div>
-                    <h3 className="text-2xl font-black italic uppercase tracking-tighter text-slate">Nuevo Abono</h3>
-                </div>
-
-                <div className="space-y-4">
-                    <p className="text-[10px] font-black text-slate uppercase tracking-[0.4em] ml-2 italic opacity-40">Total Pendiente Actual</p>
-                    <div className="text-3xl sm:text-4xl md:text-5xl font-black italic tracking-tighter text-slate leading-none">
-                    {loan.currency === 'USD' ? <span className="text-xl mr-0.5 text-gray-300">$</span> : <span className="text-xl mr-0.5 text-gray-300">Bs.</span>}
-                    {totalPending.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+         <div className="relative z-10 flex flex-col gap-10">
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+               <div className="space-y-2">
+                  <div className={`px-4 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest w-fit border shadow-lg ${
+                    loan.status === 'completed' ? 'bg-emerald-500 text-white border-emerald-400' :
+                    loan.status === 'cancelled' ? 'bg-rose-500 text-white border-rose-400' :
+                    loan.status === 'overdue' ? 'bg-rose-500 text-white border-rose-400 animate-pulse' :
+                    'bg-pear text-slate border-pear'
+                  }`}>
+                    {loan.status === 'completed' ? 'Finalizado' : loan.status === 'cancelled' ? 'Anulado' : loan.status === 'overdue' ? 'Vencido' : 'En Curso'}
                   </div>
-                    {loan.currency === 'VES' && loan.rateAtCreation && (
-                        <div className="flex flex-col gap-1 mt-2 text-[10px] font-bold text-gray-400">
-                           <div className="flex items-center justify-between border-b border-gray-100 pb-1">
-                              <span>Equivalente Original:</span>
-                              <span className="text-slate font-black">~{(totalPending / loan.rateAtCreation).toFixed(2)} USD</span>
+                  <h1 className="text-2xl md:text-5xl font-black italic tracking-tighter uppercase leading-tight break-words max-w-2xl">
+                    {loan.clientName}
+                  </h1>
+               </div>
+               
+               <div className="text-left md:text-right">
+                  <p className="text-[9px] font-black text-white/30 uppercase tracking-[0.4em] mb-1">Monto Total Contrato</p>
+                  <p className="text-2xl md:text-4xl font-black italic tracking-tighter text-pear">
+                    {loan.currency === 'USD' ? '$' : 'Bs.'}{loan.amount.toLocaleString(undefined, { minimumFractionDigits: 1 })}
+                  </p>
+               </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 md:gap-12 border-t border-white/10 pt-10">
+               <div>
+                  <p className="text-[9px] font-black uppercase tracking-widest text-white/30 mb-2">Saldo Pendiente</p>
+                  <p className="text-lg md:text-2xl font-black italic text-white tracking-tighter">
+                     {loan.currency === 'USD' ? '$' : 'Bs.'}{totalPending.toLocaleString(undefined, { minimumFractionDigits: 1 })}
+                  </p>
+               </div>
+               <div>
+                  <p className="text-[9px] font-black uppercase tracking-widest text-white/30 mb-2">Interés / Frecuencia</p>
+                  <p className="text-lg md:text-2xl font-black italic text-white tracking-tighter">
+                     {loan.interestRate}% <span className="text-xs uppercase text-white/40 ml-1">{loan.frequency}</span>
+                  </p>
+               </div>
+               <div>
+                  <p className="text-[9px] font-black uppercase tracking-widest text-white/30 mb-2">Cuotas Pagadas</p>
+                  <div className="flex items-baseline gap-2">
+                     <span className="text-lg md:text-2xl font-black italic text-pear">{loan.paidInstallmentsCount}</span>
+                     <span className="text-xs font-black text-white/20">/ {loan.numberOfInstallments}</span>
+                  </div>
+               </div>
+               <div className="flex flex-col md:items-start">
+                  <p className="text-[9px] font-black uppercase tracking-widest text-white/30 mb-2">Progreso</p>
+                  <div className="w-full h-8 bg-white/5 rounded-2xl p-1 relative overflow-hidden flex items-center px-4">
+                     <div 
+                        className="absolute left-0 top-0 h-full bg-pear transition-all duration-1000" 
+                        style={{ width: `${(loan.paidInstallmentsCount/loan.numberOfInstallments)*100}%` }}
+                     ></div>
+                     <span className="relative z-10 text-[11px] font-black italic text-white mix-difference">
+                        {((loan.paidInstallmentsCount/loan.numberOfInstallments)*100).toFixed(0)}%
+                     </span>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+
+      {/* ─── 3. MAIN CONTENT GRID ─── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+         
+         {/* LEFT/MAIN AREA: Schedule & History */}
+         <div className="lg:col-span-8 space-y-8">
+            
+            {/* TABS (Mobile only switch) */}
+            <div className="flex lg:hidden bg-white p-2 rounded-[24px] border border-slate/5 shadow-lg">
+               <button 
+                  onClick={() => setActiveTab('cronograma')}
+                  className={`flex-1 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'cronograma' ? 'bg-slate text-pear' : 'text-gray-400'}`}
+               >
+                  Cuotas
+               </button>
+               <button 
+                  onClick={() => setActiveTab('pagos')}
+                  className={`flex-1 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'pagos' ? 'bg-slate text-pear' : 'text-gray-400'}`}
+               >
+                  Pagos
+               </button>
+               <button 
+                  onClick={() => setActiveTab('abono')}
+                  className={`flex-1 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'abono' ? 'bg-pear text-slate shadow-xl' : 'text-gray-400'}`}
+               >
+                  Cobrar
+               </button>
+            </div>
+
+            {/* CRONOGRAMA */}
+            <div className={activeTab === 'cronograma' ? 'block' : 'hidden lg:block'}>
+               <div className="bg-white rounded-[40px] md:rounded-[56px] border border-slate/5 shadow-2xl overflow-hidden p-3 md:p-6">
+                  <div className="px-6 py-8 border-b border-gray-50 flex items-center gap-4">
+                     <div className="p-3 bg-vanilla text-slate rounded-2xl"><Clock size={18} /></div>
+                     <h3 className="text-xl md:text-2xl font-black italic uppercase tracking-tighter text-slate">Cronograma de Pagos</h3>
+                  </div>
+
+                  {/* Desktop Table */}
+                  <div className="hidden md:block overflow-x-auto">
+                     <table className="w-full text-left">
+                        <thead>
+                           <tr className="border-b border-gray-50">
+                              <th className="px-6 py-8 text-[10px] font-black uppercase tracking-widest text-gray-300">#</th>
+                              <th className="px-6 py-8 text-[10px] font-black uppercase tracking-widest text-gray-300">Fecha</th>
+                              <th className="px-6 py-8 text-[10px] font-black uppercase tracking-widest text-gray-300">Estado</th>
+                              <th className="px-6 py-8 text-[10px] font-black uppercase tracking-widest text-gray-300">Cuota</th>
+                              <th className="px-6 py-8 text-[10px] font-black uppercase tracking-widest text-gray-300">Pagado</th>
+                              <th className="px-6 py-8 text-[10px] font-black uppercase tracking-widest text-gray-300 text-right">Saldo</th>
+                           </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-50">
+                           {installments.map((inst, index) => {
+                              const rate = (loan.isIndexed && loan.currency === 'VES') ? (exchangeRate?.rate || 1) : 1;
+                              const realAmount = (loan.isIndexed && loan.currency === 'VES' && inst.amountUSD) ? (inst.amountUSD * rate) : inst.amount;
+                              const remaining = realAmount - (inst.paidAmount || 0);
+                              return (
+                                 <tr key={inst.id} className="group hover:bg-gray-50/50 transition-all">
+                                    <td className="px-6 py-6 text-xs font-black text-gray-300 italic">#{ (index+1).toString().padStart(2, '0') }</td>
+                                    <td className="px-6 py-6 font-black text-sm text-slate uppercase">{formatDate(inst.dueDate)}</td>
+                                    <td className="px-6 py-6">
+                                       <span className={`px-4 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest border ${
+                                          inst.status === 'paid' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                                          inst.status === 'partial' ? 'bg-amber-50 text-amber-600 border-amber-100' : 'bg-gray-50 text-gray-400 border-gray-100'
+                                       }`}>
+                                          {inst.status === 'paid' ? 'PAGADO' : inst.status === 'partial' ? 'AVANCE' : 'PENDIENTE'}
+                                       </span>
+                                    </td>
+                                    <td className="px-6 py-6 font-bold text-gray-400 text-sm italic">{loan.currency === 'USD' ? '$' : 'Bs.'}{realAmount.toLocaleString(undefined, { minimumFractionDigits: 1 })}</td>
+                                    <td className="px-6 py-6 font-black text-slate text-sm italic">{loan.currency === 'USD' ? '$' : 'Bs.'}{(inst.paidAmount || 0).toLocaleString(undefined, { minimumFractionDigits: 1 })}</td>
+                                    <td className="px-6 py-6 text-right font-black text-base italic text-slate">
+                                       {remaining > 0 ? (
+                                          <span className="text-rose-500">{loan.currency === 'USD' ? '$' : 'Bs.'}{remaining.toLocaleString(undefined, { minimumFractionDigits: 1 })}</span>
+                                       ) : (
+                                          <span className="text-emerald-500">LIQUIDADO</span>
+                                       )}
+                                    </td>
+                                 </tr>
+                              );
+                           })}
+                        </tbody>
+                     </table>
+                  </div>
+
+                  {/* Mobile Mobile List */}
+                  <div className="md:hidden divide-y divide-gray-50">
+                     {installments.map((inst, index) => {
+                        const rate = (loan.isIndexed && loan.currency === 'VES') ? (exchangeRate?.rate || 1) : 1;
+                        const realAmount = (loan.isIndexed && loan.currency === 'VES' && inst.amountUSD) ? (inst.amountUSD * rate) : inst.amount;
+                        const remaining = realAmount - (inst.paidAmount || 0);
+                        return (
+                           <div key={inst.id} className="p-6 space-y-4">
+                              <div className="flex justify-between items-center text-[9px] font-black tracking-widest uppercase">
+                                 <span className="text-gray-300">Cuota #{index+1}</span>
+                                 <span className={inst.status === 'paid' ? 'text-emerald-500' : inst.status === 'partial' ? 'text-amber-500' : 'text-gray-300'}>{formatDate(inst.dueDate)}</span>
+                              </div>
+                              <div className="flex justify-between items-end">
+                                 <span className={`px-4 py-1 rounded-full text-[8px] font-black uppercase tracking-widest ${inst.status === 'paid' ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-50 text-gray-400'}`}>
+                                    {inst.status === 'paid' ? 'Pagado' : inst.status === 'partial' ? 'Avance' : 'Pendiente'}
+                                 </span>
+                                 <div className="text-right">
+                                    <p className="text-[9px] font-black text-gray-300 uppercase mb-1">Pendiente</p>
+                                    <p className={`text-xl font-black italic tracking-tighter leading-none ${remaining > 0 ? 'text-slate' : 'text-emerald-500'}`}>
+                                       {loan.currency === 'USD' ? '$' : 'Bs.'}{remaining.toLocaleString(undefined, { minimumFractionDigits: 1 })}
+                                    </p>
+                                 </div>
+                              </div>
                            </div>
-                           {exchangeRate?.rate && (
-                              <div className="flex items-center justify-between pt-1">
-                                 <span>Equivalente Hoy (BCV: {exchangeRate.rate.toFixed(2)}):</span>
-                                 <span className="text-pear font-black italic text-xs">~{(totalPending / exchangeRate.rate).toFixed(2)} USD</span>
+                        );
+                     })}
+                  </div>
+               </div>
+            </div>
+
+            {/* HISTORIAL PAGOS */}
+            <div className={activeTab === 'pagos' ? 'block' : 'hidden lg:block'}>
+               <PaymentHistory loanId={loan.id} currency={loan.currency} refreshTrigger={refreshHistory} />
+            </div>
+         </div>
+
+         {/* SIDEBAR AREA: Payment Form & Quick Stats */}
+         <div className="lg:col-span-4 space-y-8 lg:sticky lg:top-10">
+            {/* Payment Panel */}
+            <div className={activeTab === 'abono' ? 'block' : 'hidden lg:block'}>
+               {loan.status === 'active' || loan.status === 'overdue' ? (
+                 <Card className="!p-8 md:!p-10 !rounded-[48px] border-2 border-slate shadow-2xl space-y-10 bg-white">
+                     <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 bg-pear rounded-2xl flex items-center justify-center text-slate shadow-inner"><TrendingUp size={20} /></div>
+                        <h3 className="text-xl md:text-2xl font-black italic uppercase tracking-tighter text-slate">Registrar Cobro</h3>
+                     </div>
+
+                     {/* ─── QUICK INSTALLMENT SELECTOR ─── */}
+                     <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                           <span className="text-[9px] font-black uppercase tracking-widest text-gray-400">Seleccionar Cuotas</span>
+                           {selectedInstallmentIndices.length > 0 && (
+                              <button 
+                                 type="button"
+                                 onClick={() => { setSelectedInstallmentIndices([]); setPaymentAmount(''); }}
+                                 className="text-[9px] font-black uppercase tracking-widest text-rose-500 hover:underline"
+                              >
+                                 Limpiar
+                              </button>
+                           )}
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                           {installments
+                              .map((inst, idx) => ({ ...inst, originalIndex: idx }))
+                              .filter(inst => inst.status !== 'paid')
+                              .slice(0, 6) // Solo mostrar las próximas 6 para no saturar
+                              .map((inst) => (
+                                 <button
+                                    key={inst.id}
+                                    type="button"
+                                    onClick={() => toggleInstallmentSelection(inst.originalIndex)}
+                                    className={`px-4 py-3 rounded-2xl text-[10px] font-black uppercase tracking-tighter transition-all border-2 ${
+                                       selectedInstallmentIndices.includes(inst.originalIndex)
+                                       ? 'bg-slate border-slate text-pear shadow-lg scale-105'
+                                       : 'bg-white border-gray-50 text-gray-400 hover:border-slate/10'
+                                    }`}
+                                 >
+                                    #{inst.originalIndex + 1}
+                                 </button>
+                              ))
+                           }
+                           {installments.filter(i => i.status !== 'paid').length > 6 && (
+                              <div className="px-4 py-3 rounded-2xl text-[10px] font-black text-gray-300 uppercase italic">...</div>
+                           )}
+                        </div>
+                     </div>
+
+                    <form onSubmit={handleGlobalPayment} className="space-y-8">
+                        <div className="space-y-2">
+                           <Input
+                             label="Monto Recibido"
+                             type="number"
+                             step="0.01"
+                             required
+                             min="0.01"
+                              value={paymentAmount}
+                              onChange={(e) => {
+                                 setPaymentAmount(e.target.value);
+                                 if (selectedInstallmentIndices.length > 0) setSelectedInstallmentIndices([]); // Si escribe manual, desactiva selección
+                              }}
+                             className="font-black text-xl italic tracking-tighter"
+                             icon={<span className="font-black text-sm italic text-gray-300">{paymentCurrency === 'USD' ? '$' : 'Bs.'}</span>}
+                           />
+                           
+                           {/* Conversión visual rápida */}
+                           {paymentCurrency !== loan.currency && paymentAmount && exchangeRate?.rate && (
+                              <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100 flex items-center justify-between">
+                                 <span className="text-[9px] font-black uppercase text-emerald-800 tracking-widest italic leading-none">Equivalencia <br/> Préstamo</span>
+                                 <span className="font-black text-lg text-emerald-600 italic tracking-tighter">
+                                    {loan.currency === 'USD' ? '$' : 'Bs.'}
+                                    {paymentCurrency === 'VES' 
+                                      ? (parseFloat(paymentAmount) / exchangeRate.rate).toFixed(2)
+                                      : (parseFloat(paymentAmount) * exchangeRate.rate).toFixed(2)
+                                    }
+                                 </span>
                               </div>
                            )}
                         </div>
-                    )}
-                </div>
 
-                <form onSubmit={handleGlobalPayment} className="space-y-8">
-                    <div className="space-y-4">
-                      <label className="text-[10px] font-black uppercase tracking-widest text-slate ml-2 opacity-50 italic">Moneda a Recibir</label>
-                      <div className="flex gap-3 bg-gray-50/50 p-2.5 rounded-[32px] border border-slate/5">
-                        {['USD', 'VES'].map((curr) => (
-                           <button
-                             key={curr}
-                             type="button"
-                             onClick={() => {
-                                setPaymentCurrency(curr as any);
-                                setPaymentMethod(curr === 'USD' ? 'Efectivo USD' : 'Pago Móvil');
-                             }}
-                             className={`flex-1 py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all duration-500 transform ${paymentCurrency === curr ? 'bg-slate text-pear shadow-2xl scale-[1.02] shadow-slate/20' : 'text-gray-400 hover:text-slate hover:bg-white border border-transparent'}`}
-                           >
-                             {curr}
-                           </button>
-                        ))}
-                      </div>
+                        <div className="space-y-6">
+                           <div className="grid grid-cols-2 gap-3 p-1.5 bg-gray-50 rounded-[28px]">
+                              {['USD', 'VES'].map(c => (
+                                 <button key={c} type="button" onClick={() => { setPaymentCurrency(c as any); setPaymentMethod(c === 'USD' ? 'Efectivo USD' : 'Pago Móvil'); }} className={`py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${paymentCurrency === c ? 'bg-slate text-pear shadow-xl' : 'text-gray-400 hover:text-slate'}`}>{c}</button>
+                              ))}
+                           </div>
+
+                           <div className="grid grid-cols-3 gap-3">
+                              {(paymentCurrency === 'USD' 
+                                ? [{ id: 'Efectivo USD', icon: Banknote, l: 'Efec' }, { id: 'Zelle', icon: Zap, l: 'Zelle' }, { id: 'Binance', icon: SendHorizontal, l: 'Binan' }]
+                                : [{ id: 'Pago Móvil', icon: Zap, l: 'P Móv' }, { id: 'Transferencia', icon: SendHorizontal, l: 'Transf' }, { id: 'Efectivo VES', icon: Banknote, l: 'Efec' }]
+                              ).map(m => (
+                                 <button key={m.id} type="button" onClick={() => setPaymentMethod(m.id)} className={`py-4 flex flex-col items-center gap-1.5 rounded-2xl border transition-all ${paymentMethod === m.id ? 'bg-slate border-slate text-pear shadow-lg scale-105' : 'bg-gray-50/50 border-transparent text-gray-400 hover:border-slate/10'}`}>
+                                    <m.icon size={18} />
+                                    <span className="text-[8px] font-black uppercase tracking-wider">{m.l}</span>
+                                 </button>
+                              ))}
+                           </div>
+                        </div>
+
+                        <div className="relative">
+                           <FileText className="absolute left-6 top-6 text-gray-400" size={20} />
+                           <textarea className="w-full bg-vanilla/50 border-2 border-transparent focus:border-slate focus:bg-white p-6 pl-16 rounded-[32px] font-bold text-sm text-slate placeholder:text-gray-400 outline-none transition-all min-h-[140px]" placeholder="Ej: Pago adelantado..." value={paymentNote} onChange={(e) => setPaymentNote(e.target.value)} />
+                        </div>
+
+                        <Button type="submit" isLoading={submittingPayment} disabled={!paymentAmount} variant="primary" size="lg" className="w-full !rounded-[32px] text-base" rightIcon={<TrendingUp size={20} />}>
+                           REGISTRAR COBRO
+                        </Button>
+                    </form>
+                 </Card>
+               ) : (
+                 <div className={`p-10 rounded-[48px] border-2 space-y-6 shadow-sm ${loan.status === 'cancelled' ? 'bg-rose-50 border-rose-100 text-rose-500' : 'bg-emerald-50 border-emerald-100 text-emerald-600'}`}>
+                    <div className="p-3 bg-white rounded-2xl shadow-inner w-fit mx-auto">{loan.status === 'cancelled' ? <AlertTriangle size={32} /> : <CheckCircle2 size={32} />}</div>
+                    <div className="text-center space-y-2">
+                       <h3 className="text-2xl font-black uppercase italic tracking-tighter">{loan.status === 'cancelled' ? 'Anulado' : 'Finalizado'}</h3>
+                       <p className="text-[10px] font-bold uppercase tracking-widest opacity-60 leading-relaxed">
+                          {loan.status === 'cancelled' ? `Cancelado el ${formatDate(loan.cancelledAt)}` : 'Este préstamo ha sido liquidado exitosamente.'}
+                       </p>
                     </div>
-
-                    <div className="space-y-2">
-                       <Input
-                         label="Monto Recibido"
-                         type="number"
-                         step="0.01"
-                         required
-                         min="0.01"
-                         value={paymentAmount}
-                         onChange={(e) => setPaymentAmount(e.target.value)}
-                         className="font-black text-3xl italic tracking-tighter"
-                         icon={<span className="font-black text-xl italic text-gray-300">{paymentCurrency === 'USD' ? '$' : 'Bs.'}</span>}
-                       />
-
-                       {/* Mostrar conversión cruzada si pagan en moneda distinta al préstamo */}
-                       {paymentCurrency !== loan.currency && paymentAmount && exchangeRate?.rate && parseFloat(paymentAmount) > 0 && (
-                          <div className="px-6 py-4 mt-2 bg-emerald-50 rounded-[24px] border border-emerald-100 flex items-center justify-between text-emerald-700 animate-in fade-in slide-in-from-top-2">
-                             <div className="flex flex-col">
-                               <span className="text-[9px] font-black uppercase tracking-[0.2em] opacity-60">Equivalente Real</span>
-                               <span className="text-[10px] font-bold italic tracking-widest">Amortizará a capital deudor</span>
-                             </div>
-                             <span className="font-[900] italic text-2xl tracking-tighter">
-                               {loan.currency === 'USD' ? '$' : 'Bs.'}
-                               {paymentCurrency === 'VES' 
-                                 ? (parseFloat(paymentAmount) / exchangeRate.rate).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits:2})
-                                 : (parseFloat(paymentAmount) * exchangeRate.rate).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits:2})
-                               }
-                             </span>
-                          </div>
-                       )}
-                    </div>
-
-                    <div className="space-y-4">
-                      <label className="text-[10px] font-black uppercase tracking-widest text-slate ml-2 opacity-50 italic">Método de Pago</label>
-                      <div className="grid grid-cols-3 gap-3 bg-gray-50/50 p-2.5 rounded-[32px] border border-slate/5">
-                          {(paymentCurrency === 'USD' 
-                            ? [
-                                { id: 'Efectivo USD', icon: Banknote, label: 'Efectivo' },
-                                { id: 'Zelle', icon: Zap, label: 'Zelle' },
-                                { id: 'Binance', icon: SendHorizontal, label: 'Binance' }
-                              ]
-                            : [
-                                { id: 'Pago Móvil', icon: Zap, label: 'Pago Móv' },
-                                { id: 'Transferencia', icon: SendHorizontal, label: 'Transf' },
-                                { id: 'Efectivo VES', icon: Banknote, label: 'Efectivo' }
-                              ]
-                          ).map(m => (
-                            <button
-                                key={m.id}
-                                type="button"
-                                title={m.id}
-                                onClick={() => setPaymentMethod(m.id)}
-                                className={`py-4 flex flex-col items-center justify-center gap-2 rounded-2xl transition-all duration-300 transform ${paymentMethod === m.id ? 'bg-slate text-pear shadow-xl scale-105 shadow-slate/20' : 'text-gray-400 hover:text-slate hover:bg-white hover:shadow-md'}`}
-                            >
-                                <m.icon size={22} strokeWidth={3} />
-                                <span className="text-[9px] font-black uppercase tracking-widest">{m.label}</span>
-                            </button>
-                          ))}
-                      </div>
-                    </div>
-
-                    <div className="space-y-3">
-                      <label className="text-[10px] font-black uppercase tracking-widest text-slate ml-2">Notas del Cobro</label>
-                      <div className="relative">
-                          <FileText className="absolute left-6 top-6 text-gray-200" size={20} />
-                          <textarea 
-                            className="w-full bg-[#F5F5F3]/50 border-2 border-transparent focus:border-slate focus:bg-white p-6 pl-16 rounded-[32px] font-bold text-sm outline-none transition-all min-h-[140px]"
-                            placeholder="Ej: Pago adelantado..."
-                            value={paymentNote}
-                            onChange={(e) => setPaymentNote(e.target.value)}
-                          />
-                      </div>
-                    </div>
-
-                    <Button 
-                      type="submit"
-                      isLoading={submittingPayment}
-                      disabled={!paymentAmount}
-                      variant="primary"
-                      size="lg"
-                      className="w-full !rounded-[32px]"
-                      rightIcon={<TrendingUp size={20} />}
-                    >
-                      REGISTRAR COBRO
-                    </Button>
-                </form>
-              </Card>
-            ) : loan.status === 'cancelled' ? (
-              <div className="bg-rose-50 p-10 rounded-[48px] border-2 border-rose-100 space-y-6 shadow-sm">
-                 <div className="flex items-center gap-4 text-rose-500">
-                    <div className="p-3 bg-white rounded-2xl shadow-inner"><AlertTriangle size={24} /></div>
-                    <h3 className="text-2xl font-black uppercase italic tracking-tighter">Préstamo Cancelado</h3>
                  </div>
-                 <p className="text-xs font-bold text-rose-400 uppercase tracking-widest leading-relaxed">Este préstamo fue anulado el <span className="text-rose-600 underline underline-offset-4 decoration-2">{formatDate(loan.cancelledAt)}</span></p>
-                 {loan.cancellationReason && (
-                    <div className="p-6 bg-white rounded-[32px] italic text-xs text-slate/70 font-medium shadow-sm border border-rose-100/50">
-                       "{loan.cancellationReason}"
-                    </div>
-                 )}
-                 <Button variant="ghost" className="w-full text-rose-500 hover:bg-white/50" onClick={() => navigate('/prestamos')}>
-                    Explorar otros créditos
-                 </Button>
-              </div>
-            ) : (
-              <div className="bg-emerald-50 p-10 rounded-[48px] border-2 border-emerald-100 space-y-6 shadow-sm">
-                 <div className="flex items-center gap-4 text-emerald-600">
-                    <div className="p-3 bg-white rounded-2xl shadow-inner"><CheckCircle2 size={24} /></div>
-                    <h3 className="text-2xl font-black uppercase italic tracking-tighter">Crédito Finalizado</h3>
-                 </div>
-                 <p className="text-[11px] font-black text-emerald-500/80 uppercase tracking-[0.1em] leading-relaxed">El capital y los intereses han sido pagados en su totalidad. No hay deuda pendiente.</p>
-                 <Button variant="ghost" className="w-full text-emerald-600 hover:bg-white/50" onClick={() => navigate('/prestamos')}>
-                    Ver historial completo
-                 </Button>
-              </div>
-            )}
+               )}
+            </div>
 
-            {/* Quick Stat Card */}
-            <div className="bg-pear p-10 rounded-[48px] shadow-2xl relative overflow-hidden group">
-               <div className="absolute top-0 right-0 p-4 opacity-5 translate-x-1/4 -translate-y-1/4 group-hover:scale-110 transition-transform duration-700">
-                  <CreditCard size={180} />
-               </div>
-               <p className="text-[10px] font-black uppercase tracking-[0.4em] text-slate/40 mb-3 ml-1">Cuotas Liquidadas</p>
-               <div className="flex items-baseline gap-3">
-                  <h4 className="text-7xl font-[900] italic tracking-tighter text-slate">{loan.paidInstallmentsCount}</h4>
-                  <span className="text-2xl font-black text-slate/30">/ {loan.numberOfInstallments}</span>
-               </div>
-               <div className="mt-8 pt-6 border-t border-slate/5">
-                  <div className="text-[10px] font-black uppercase tracking-widest text-slate/60 italic flex items-center gap-2">
-                     <div className="w-2 h-2 rounded-full bg-slate animate-pulse"></div>
-                     Progreso del contrato
+            {/* Quick Meta Info */}
+            <div className="bg-vanilla p-8 rounded-[40px] border border-slate/5 space-y-6">
+               <h4 className="text-[9px] font-black uppercase tracking-[0.3em] text-slate/30 ml-1">Estructura del Contrato</h4>
+               <div className="space-y-4">
+                  <div className="flex justify-between items-center text-xs font-black uppercase tracking-widest">
+                     <span className="text-gray-400 italic">Fecha Inicio</span>
+                     <span className="text-slate">{formatDate(loan.startDate)}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-xs font-black uppercase tracking-widest">
+                     <span className="text-gray-400 italic">Fecha Vencimiento</span>
+                     <span className="text-slate">{formatDate(loan.endDate)}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-xs font-black uppercase tracking-widest border-t border-slate/5 pt-4">
+                     <span className="text-gray-400 italic">Tasa Mensual</span>
+                     <span className="text-slate">{loan.interestRate}%</span>
+                  </div>
+                  <div className="flex justify-between items-center text-xs font-black uppercase tracking-widest">
+                     <span className="text-gray-400 italic">Modo Indexado</span>
+                     <span className={loan.isIndexed ? 'text-emerald-500' : 'text-rose-500'}>{loan.isIndexed ? 'Sí (BCV)' : 'Directo'}</span>
                   </div>
                </div>
             </div>
          </div>
-
-         {/* RIGHT: Table & Details */}
-         <div className="lg:col-span-8 space-y-8">
-            
-            {/* Installments List */}
-            <div className="bg-white rounded-[56px] border border-slate/5 shadow-2xl overflow-hidden p-3">
-               <div className="p-8 border-b border-gray-50 flex justify-between items-center">
-                  <div className="flex items-center gap-4">
-                     <div className="w-2 h-8 bg-pear rounded-full shadow-inner"></div>
-                     <h3 className="text-2xl font-black italic uppercase tracking-tighter text-slate">Cronograma de Pagos</h3>
-                  </div>
-                  <div className="hidden md:block text-[10px] font-black uppercase tracking-[0.3em] text-gray-300">
-                     Sincronizado via Melo Engine
-                  </div>
-               </div>
-
-               {/* Table Desktop */}
-               <div className="hidden md:block overflow-x-auto">
-                  <table className="w-full text-left border-collapse">
-                     <thead>
-                        <tr className="border-b border-gray-50">
-                           <th className="px-8 py-8 text-[10px] font-black uppercase tracking-widest text-gray-400">№</th>
-                           <th className="px-8 py-8 text-[10px] font-black uppercase tracking-widest text-gray-400">Vencimiento</th>
-                           <th className="px-8 py-8 text-[10px] font-black uppercase tracking-widest text-gray-400">Estado</th>
-                           <th className="px-8 py-8 text-[10px] font-black uppercase tracking-widest text-gray-400">Cuota</th>
-                           <th className="px-8 py-8 text-[10px] font-black uppercase tracking-widest text-gray-400">Pagado</th>
-                           <th className="px-10 py-8 text-[10px] font-black uppercase tracking-widest text-gray-400 text-right">Balance</th>
-                        </tr>
-                     </thead>
-                     <tbody className="divide-y divide-gray-50">
-                        {installments.map((inst, index) => {
-                           const rate = (loan.isIndexed && loan.currency === 'VES') ? (exchangeRate?.rate || 1) : 1;
-                           const realAmount = (loan.isIndexed && loan.currency === 'VES' && inst.amountUSD) 
-                             ? (inst.amountUSD * rate) 
-                             : inst.amount;
-                           const remainingInst = realAmount - (inst.paidAmount || 0);
-                           
-                           return (
-                             <tr key={inst.id} className="hover:bg-gray-50/50 transition-all group">
-                                <td className="px-8 py-6">
-                                   <span className="text-xs font-black text-gray-300 group-hover:text-slate italic transition-colors">#{(index + 1).toString().padStart(2, '0')}</span>
-                                </td>
-                                <td className="px-8 py-6">
-                                   <div className="flex items-center gap-3">
-                                      <Clock size={14} className="text-gray-200 group-hover:text-slate transition-colors" />
-                                      <span className="font-black text-sm text-slate tracking-tight uppercase">{formatDate(inst.dueDate)}</span>
-                                   </div>
-                                </td>
-                                <td className="px-8 py-6">
-                                   <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border ${
-                                      inst.status === 'paid' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 
-                                      inst.status === 'partial' ? 'bg-amber-50 text-amber-600 border-amber-100' : 
-                                      'bg-gray-50 text-gray-400 border-gray-100'}`}>
-                                      {inst.status === 'paid' ? <CheckCircle2 size={12} /> : inst.status === 'partial' ? <TrendingUp size={12} /> : <Clock size={12} />}
-                                      {inst.status === 'paid' ? 'PAGADO' : inst.status === 'partial' ? 'PARCIAL' : 'PENDIENTE'}
-                                   </div>
-                                </td>
-                                <td className="px-8 py-6">
-                                   <div className="flex flex-col">
-                                      <span className="font-bold text-gray-400 text-sm italic tracking-tighter">
-                                        {loan.currency === 'USD' ? '$' : 'Bs.'}{realAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                                      </span>
-                                      {loan.isIndexed && loan.currency === 'VES' && (
-                                         <span className="text-[8px] font-black text-gray-300 uppercase">Original: Bs.{inst.amount.toFixed(2)}</span>
-                                      )}
-                                   </div>
-                                </td>
-                                <td className="px-8 py-6">
-                                   <span className="font-black text-slate text-sm italic tracking-tighter">
-                                      {loan.currency === 'USD' ? '$' : 'Bs.'}{(inst.paidAmount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                                   </span>
-                                </td>
-                                <td className="px-10 py-6 text-right">
-                                   <span className={`font-black text-base italic tracking-tighter ${remainingInst > 0 ? 'text-rose-500' : 'text-emerald-500'}`}>
-                                      {loan.currency === 'USD' ? '$' : 'Bs.'}{remainingInst.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                                   </span>
-                                </td>
-                             </tr>
-                           );
-                        })}
-                     </tbody>
-                  </table>
-               </div>
-
-               {/* Mobile List View */}
-               <div className="md:hidden divide-y divide-gray-50 bg-[#F5F5F3]/30">
-                  {installments.map((inst, index) => {
-                      const rate = (loan.isIndexed && loan.currency === 'VES') ? (exchangeRate?.rate || 1) : 1;
-                      const realAmount = (loan.isIndexed && loan.currency === 'VES' && inst.amountUSD) 
-                         ? (inst.amountUSD * rate) 
-                         : inst.amount;
-                      const remainingInst = realAmount - (inst.paidAmount || 0);
-                      
-                      return (
-                         <div key={inst.id} className="p-8 space-y-6 hover:bg-white transition-colors">
-                            <div className="flex justify-between items-center">
-                               <span className="text-[10px] font-black text-gray-300 uppercase tracking-[0.3em] italic">Cuota #{(index+1).toString().padStart(2, '0')}</span>
-                               <div className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border ${
-                                  inst.status === 'paid' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 
-                                  inst.status === 'partial' ? 'bg-amber-50 text-amber-600 border-amber-100' : 
-                                  'bg-white text-gray-400 border-gray-100'}`}>
-                                  {inst.status === 'paid' ? 'PAGADO' : inst.status === 'partial' ? 'ABONADO' : 'PENDIENTE'}
-                               </div>
-                            </div>
-                            <div className="flex justify-between items-end">
-                               <div className="space-y-1">
-                                  <p className="text-[9px] font-black text-gray-300 uppercase tracking-widest">Vencimiento</p>
-                                  <p className="font-black text-slate uppercase text-sm">{formatDate(inst.dueDate)}</p>
-                               </div>
-                               <div className="text-right space-y-1">
-                                  <p className="text-[9px] font-black text-gray-300 uppercase tracking-widest">Saldo Pendiente</p>
-                                  <p className={`text-2xl font-black italic tracking-tighter leading-none ${remainingInst > 0 ? 'text-rose-500' : 'text-emerald-500'}`}>
-                                     {loan.currency === 'USD' ? '$' : 'Bs.'}{remainingInst.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                                  </p>
-                               </div>
-                            </div>
-                         </div>
-                      );
-                   })}
-               </div>
-            </div>
-         </div>
+      </div>
 
          {/* Payment History Section */}
          <div className="lg:col-span-12 mt-12 pb-20">
@@ -619,7 +624,6 @@ const LoanDetailPage: React.FC = () => {
                refreshTrigger={refreshHistory} 
             />
          </div>
-      </div>
 
       {/* CANCEL MODAL */}
       <Modal
@@ -645,7 +649,7 @@ const LoanDetailPage: React.FC = () => {
             <div className="space-y-3">
                <label className="text-[10px] font-black uppercase tracking-widest text-slate ml-2">Motivo de Cancelación</label>
                <textarea 
-                  className="w-full bg-[#F5F5F3]/50 p-6 rounded-[32px] font-bold text-sm outline-none focus:bg-white border-2 border-transparent focus:border-rose-500 transition-all min-h-[120px]"
+                  className="w-full bg-[#F5F5F3]/50 p-6 rounded-[32px] font-bold text-sm text-slate placeholder:text-gray-400 outline-none focus:bg-white border-2 border-transparent focus:border-rose-500 transition-all min-h-[120px]"
                   placeholder="Ej: Devolución de capital por parte del cliente..."
                   value={cancelReason}
                   onChange={(e) => setCancelReason(e.target.value)}

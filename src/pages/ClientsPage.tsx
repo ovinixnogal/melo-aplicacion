@@ -4,10 +4,10 @@ import {
   Search, 
   Loader2, 
   PlusCircle, 
-  Phone,
   Filter,
   RefreshCcw,
-  MoreVertical
+  MoreVertical,
+  MessageCircle
 } from 'lucide-react';
 import { useClients } from '../hooks/useClients';
 import type { Client } from '../hooks/useClients';
@@ -82,9 +82,6 @@ const ClientsPage: React.FC = () => {
     return true;
   });
 
-  const getInitials = (name: string) => {
-    return name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
-  };
 
   const getBalance = (client: Client) => {
     return balances[client.id] || 0;
@@ -123,12 +120,12 @@ const ClientsPage: React.FC = () => {
   }
 
   return (
-    <div className="p-4 md:p-12 space-y-8 md:space-y-12 animate-in fade-in duration-700 pb-36 md:pb-16">
+    <div className="space-y-8 animate-in fade-in duration-700 pb-20">
       
       {/* 1. Header & Quick Actions */}
       <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
         <div className="space-y-2">
-          <h1 className="text-4xl md:text-6xl font-black text-slate tracking-tighter italic leading-none">
+          <h1 className="text-3xl md:text-5xl font-black text-slate tracking-tighter italic leading-none">
             {searchTerm ? 'Resultados' : 'Mis Clientes'}
             <span className="text-pear italic">.</span>
           </h1>
@@ -192,93 +189,102 @@ const ClientsPage: React.FC = () => {
       {filteredClients.length > 0 ? (
         <div className="space-y-12">
           
-          {/* MOBILE VIEW: Ultra-compact Rows */}
-          <div className="md:hidden space-y-0 bg-white rounded-[40px] border border-[#1A1A1A]/5 overflow-hidden px-4 py-2">
-             {filteredClients.map((client, idx) => {
-               const balance = getBalance(client);
-               return (
-                 <div 
-                   key={client.id} 
-                   onClick={() => handleOpenActionSheet(client)}
-                   className={`flex items-center justify-between py-5 active:bg-gray-50 transition-colors cursor-pointer ${idx !== filteredClients.length - 1 ? 'border-b border-gray-50' : ''}`}
-                 >
-                   <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 bg-[#1A1A1A] text-[#E2FF3B] rounded-xl flex items-center justify-center font-black text-xs shadow-md overflow-hidden">
-                        {client.photoURL ? (
-                          <img src={client.photoURL} alt={client.name} className="w-full h-full object-cover" />
-                        ) : (
-                          getInitials(client.name)
-                        )}
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="font-black text-[13px] text-[#1A1A1A] tracking-tight uppercase italic">{client.name}</span>
-                        <span className="text-[10px] font-bold text-gray-300 tracking-widest uppercase truncate max-w-[120px]">{client.phone || 'Sin tel.'}</span>
-                      </div>
+          <div className="bg-white rounded-[40px] border border-slate/5 shadow-3xl shadow-slate/5 overflow-hidden">
+            
+            {/* MOBILE LIST VIEW: Improved for density */}
+            <div className="md:hidden divide-y divide-gray-50 px-2">
+               {filteredClients.map((client) => {
+                 const balance = getBalance(client);
+                 return (
+                   <div 
+                     key={client.id} 
+                     onClick={() => handleOpenActionSheet(client)}
+                     className="flex items-center justify-between py-6 px-4 active:bg-gray-50 transition-colors cursor-pointer group"
+                   >
+                     <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-slate text-pear rounded-2xl flex items-center justify-center font-black text-xs shadow-md group-hover:scale-105 transition-transform">
+                          {client.name.substring(0, 2).toUpperCase()}
+                        </div>
+                        <div className="flex flex-col min-w-0">
+                          <span className="font-black text-[14px] text-slate tracking-tight uppercase italic leading-tight truncate max-w-[150px]">{client.name}</span>
+                          <span className="text-[10px] font-black text-gray-300 tracking-widest uppercase truncate">{client.phone || 'Sin WhatsApp'}</span>
+                        </div>
+                     </div>
+                     <div className="text-right">
+                        <p className={`text-base font-[900] italic tracking-tighter ${balance > 0 ? 'text-rose-500' : 'text-gray-200'}`}>
+                          ${balance.toLocaleString()}
+                        </p>
+                        <span className="text-[8px] font-black uppercase text-gray-300 tracking-widest">Saldo Deudor</span>
+                     </div>
                    </div>
-                   <div className="text-right">
-                      <p className={`text-sm font-[900] italic tracking-tighter ${balance > 0 ? 'text-rose-500' : 'text-gray-200'}`}>
-                        ${balance.toLocaleString()}
-                      </p>
-                   </div>
-                 </div>
-               );
-             })}
-          </div>
+                 );
+               })}
+            </div>
 
-          {/* DESKTOP VIEW: Premium Grid */}
-          <div className="hidden md:grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8">
-             {filteredClients.map((client) => {
-               const balance = getBalance(client);
-               return (
-                 <div key={client.id} className="group bg-white p-8 rounded-[44px] border border-[#1A1A1A]/5 hover:border-[#E2FF3B] transition-all duration-500 hover:shadow-2xl relative overflow-hidden flex flex-col justify-between">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-gray-50 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                    
-                    <div className="flex items-start justify-between w-full relative z-10 mb-8 gap-4">
-                      <div className="flex items-center gap-4 flex-1 min-w-0">
-                        <div className="w-14 h-14 bg-[#1A1A1A] text-[#E2FF3B] rounded-[22px] flex items-center justify-center font-black text-lg shadow-xl group-hover:rotate-6 transition-transform shrink-0 overflow-hidden">
-                          {client.photoURL ? (
-                            <img src={client.photoURL} alt={client.name} className="w-full h-full object-cover" />
-                          ) : (
-                            getInitials(client.name)
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-black text-[#1A1A1A] tracking-tighter uppercase italic text-[15px] leading-tight truncate">
-                            {client.name}
-                          </h3>
-                          <p className="text-[9px] font-black text-gray-300 tracking-widest uppercase mt-0.5 truncate opacity-80">
-                            {client.email || 'No registrado'}
-                          </p>
-                        </div>
-                      </div>
-                      
-                      <div className="shrink-0">
-                         <button 
-                            onClick={() => handleOpenActionSheet(client)} 
-                            className="p-3 text-gray-400 hover:text-[#1A1A1A] bg-gray-50 rounded-xl hover:bg-[#E2FF3B] transition-all border border-transparent hover:border-slate/10 active:scale-90"
-                            title="Más Acciones"
-                         >
-                            <MoreVertical size={20} strokeWidth={3} />
-                         </button>
-                      </div>
-                    </div>
-                    
-                    <div className="mt-auto pt-8 border-t border-[#1A1A1A]/5 flex items-end justify-between relative z-10">
-                       <div className="space-y-1">
-                          <span className="text-[10px] font-black uppercase text-gray-300 tracking-[0.3em]">Capital deudor</span>
-                          <p className={`text-3xl font-[900] italic tracking-tighter leading-none ${balance > 0 ? 'text-rose-500' : 'text-gray-100'}`}>${balance.toLocaleString()}</p>
-                       </div>
-                       <a 
-                          href={`tel:${client.phone}`}
-                          className="w-12 h-12 flex items-center justify-center bg-[#E2FF3B] text-[#1A1A1A] rounded-2xl shadow-lg hover:scale-110 active:scale-95 transition-all"
-                          title="Llamar"
-                       >
-                          <Phone size={20} strokeWidth={3} />
-                       </a>
-                    </div>
-                 </div>
-               );
-             })}
+            {/* DESKTOP TABLE VIEW: Premium List Layout */}
+            <div className="hidden md:block overflow-x-auto">
+               <table className="w-full text-left border-collapse">
+                  <thead>
+                     <tr className="bg-vanilla/50 border-b border-slate/5">
+                        <th className="px-6 py-6 text-[11px] font-black uppercase tracking-[0.3em] text-gray-300">Cliente</th>
+                        <th className="px-6 py-6 text-[11px] font-black uppercase tracking-[0.3em] text-gray-300 text-center">Estado</th>
+                        <th className="px-6 py-6 text-[11px] font-black uppercase tracking-[0.3em] text-gray-300 text-nowrap">Capital Deudor</th>
+                        <th className="px-6 py-6 text-[11px] font-black uppercase tracking-[0.3em] text-gray-300 text-right">Acciones</th>
+                     </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-50">
+                     {filteredClients.map((client) => {
+                       const balance = getBalance(client);
+                       return (
+                         <tr key={client.id} className="hover:bg-vanilla/30 transition-all group">
+                            <td className="px-6 py-6">
+                               <div className="flex items-center gap-4">
+                                  <div className="w-12 h-12 bg-slate text-pear rounded-2xl flex items-center justify-center font-black text-base shadow-xl group-hover:rotate-6 transition-transform">
+                                     {client.name.substring(0, 2).toUpperCase()}
+                                  </div>
+                                  <div className="flex flex-col min-w-0">
+                                     <span className="font-black text-[14px] uppercase italic tracking-tighter text-slate group-hover:text-pear transition-colors truncate max-w-[140px]">{client.name}</span>
+                                     <span className="text-[9px] font-bold text-gray-300 uppercase mt-0.5 truncate max-w-[140px]">{client.email || 'No registrado@mail.com'}</span>
+                                  </div>
+                               </div>
+                            </td>
+
+                            <td className="px-6 py-6 text-center">
+                               <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest inline-flex items-center gap-2 
+                                  ${balance > 0 ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-600'}`}>
+                                  {balance > 0 ? 'Deudor' : 'Limpio'}
+                               </span>
+                            </td>
+                            <td className="px-6 py-6">
+                               <p className={`text-xl font-[1000] italic tracking-tighter leading-none ${balance > 0 ? 'text-rose-600' : 'text-slate/10'}`}>
+                                  ${balance.toLocaleString()}
+                               </p>
+                            </td>
+                            <td className="px-6 py-6 text-right">
+                               <div className="flex justify-end gap-2">
+                                  <a 
+                                    href={`https://wa.me/${client.phone?.replace(/\D/g, '')}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="p-3.5 bg-emerald-500 text-white rounded-xl shadow-lg hover:scale-110 active:scale-95 transition-all"
+                                    title="WhatsApp"
+                                  >
+                                     <MessageCircle size={18} strokeWidth={3} />
+                                  </a>
+                                  <button 
+                                     onClick={() => handleOpenActionSheet(client)}
+                                     className="p-3.5 bg-vanilla text-slate border border-slate/5 rounded-xl hover:bg-slate hover:text-white transition-all active:scale-90"
+                                  >
+                                     <MoreVertical size={18} strokeWidth={3} />
+                                  </button>
+                               </div>
+                            </td>
+                         </tr>
+                       );
+                     })}
+                  </tbody>
+               </table>
+            </div>
           </div>
 
           {/* 5. Pagination & Load More */}

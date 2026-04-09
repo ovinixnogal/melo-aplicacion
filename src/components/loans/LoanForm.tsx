@@ -111,24 +111,45 @@ const LoanForm: React.FC<LoanFormProps> = ({ isOpen, onClose, onSuccess }) => {
     const totalInterest = (amount * rate / 100);
     const totalToPay = amount + totalInterest;
     
-    // Diferencia de días
-    const diffTime = end.getTime() - start.getTime();
-    let diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    if (diffDays < 0) diffDays = 0;
+    let numInstallments = 0;
+    const isYearly = freq === 'yearly';
+    const isMonthly = freq === 'monthly';
 
-    const freqDaysMap: Record<string, number> = { daily: 1, weekly: 7, monthly: 30, yearly: 365 };
-    const freqDays = freqDaysMap[freq] || 7;
-    
-    // Cuotas: Math.ceil
-    let numInstallments = diffDays === 0 ? 1 : Math.ceil(diffDays / freqDays);
+    if (isMonthly) {
+      const yearDiff = end.getFullYear() - start.getFullYear();
+      const monthDiff = end.getMonth() - start.getMonth();
+      numInstallments = yearDiff * 12 + monthDiff;
+    } else if (isYearly) {
+      numInstallments = end.getFullYear() - start.getFullYear();
+    } else {
+      const diffTime = end.getTime() - start.getTime();
+      let diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      const freqDaysMap: Record<string, number> = { daily: 1, weekly: 7 };
+      const freqDays = freqDaysMap[freq] || 7;
+      numInstallments = Math.round(diffDays / freqDays);
+    }
+
+    if (numInstallments <= 0) numInstallments = 1;
+
     const installmentAmount = totalToPay / numInstallments;
     
-    // Proyección de fechas
+    // Proyección de fechas (Primera y Última)
     const firstDueDate = new Date(start);
-    firstDueDate.setDate(firstDueDate.getDate() + freqDays);
+    if (isMonthly) firstDueDate.setMonth(firstDueDate.getMonth() + 1);
+    else if (isYearly) firstDueDate.setFullYear(firstDueDate.getFullYear() + 1);
+    else {
+      const freqDaysMap: Record<string, number> = { daily: 1, weekly: 7 };
+      firstDueDate.setDate(firstDueDate.getDate() + (freqDaysMap[freq] || 7));
+    }
     
+    // Cálculo simplificado de la última fecha para el resumen
     const lastDueDate = new Date(start);
-    lastDueDate.setDate(lastDueDate.getDate() + (numInstallments * freqDays));
+    if (isMonthly) lastDueDate.setMonth(lastDueDate.getMonth() + numInstallments);
+    else if (isYearly) lastDueDate.setFullYear(lastDueDate.getFullYear() + numInstallments);
+    else {
+      const freqDaysMap: Record<string, number> = { daily: 1, weekly: 7 };
+      lastDueDate.setDate(lastDueDate.getDate() + (numInstallments * (freqDaysMap[freq] || 7)));
+    }
     const actualLastDate = lastDueDate > end ? end : lastDueDate;
 
     return {

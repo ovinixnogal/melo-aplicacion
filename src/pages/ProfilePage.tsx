@@ -2,16 +2,8 @@ import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { 
   User as UserIcon, 
-  Settings, 
   ShieldCheck, 
-  Bell, 
-  Smartphone,
-  ChevronRight,
-  CreditCard,
-  HelpCircle,
-  Info,
-  ExternalLink,
-  Lock
+  ChevronRight
 } from 'lucide-react';
 import { doc, updateDoc } from 'firebase/firestore';
 import { auth, db } from '../api/firebase';
@@ -84,21 +76,17 @@ const ProfilePage: React.FC = () => {
   };
 
   return (
-    <div className="p-4 md:p-12 space-y-8 animate-in fade-in duration-700 pb-36 md:pb-16 max-w-5xl mx-auto">
+    <div className="space-y-8 animate-in fade-in duration-700 pb-36 md:pb-16 max-w-5xl mx-auto">
       
       {/* HEADER */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div className="space-y-2">
-          <h4 className="text-[10px] font-black tracking-[0.4em] uppercase text-gray-400 flex items-center gap-2">
-            <Settings size={12} className="text-gray-300" /> Preferencias
-          </h4>
-          <h1 className="text-4xl md:text-6xl font-black text-slate tracking-tighter italic leading-none">
-            Configuración
+          <h1 className="text-3xl md:text-5xl font-black text-slate tracking-tighter italic leading-none">
+            Mi Cuenta
             <span className="text-pear italic">.</span>
           </h1>
-          <p className="text-gray-400 font-bold text-xs tracking-tight">Administración de cuenta y ecosistema</p>
+          <p className="text-gray-400 font-bold text-xs tracking-tight">Datos personales y seguridad de acceso</p>
         </div>
-        
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 pt-6">
@@ -138,7 +126,7 @@ const ProfilePage: React.FC = () => {
            {isEditing ? (
              <div className="bg-white p-8 md:p-12 rounded-[44px] border border-slate/5 shadow-2xl animate-in slide-in-from-bottom-4">
                 <div className="flex items-center justify-between mb-8">
-                  <h3 className="text-2xl font-black italic tracking-tighter text-slate">Editar Perfil</h3>
+                  <h3 className="text-2xl font-black italic tracking-tighter text-slate uppercase">Editar Perfil</h3>
                   <button onClick={() => setIsEditing(false)} className="text-gray-400 hover:text-slate"><ChevronRight size={24} /></button>
                 </div>
                 
@@ -146,12 +134,12 @@ const ProfilePage: React.FC = () => {
                    <div className="space-y-4">
                       {/* Name */}
                       <div className="space-y-2">
-                         <label className="text-[10px] font-black uppercase tracking-widest text-slate ml-2">Nombre Comercial</label>
+                         <label className="text-[10px] font-black uppercase tracking-widest text-slate ml-2 italic">Nombre Comercial / Personal</label>
                          <input 
                             type="text" 
                             value={displayName}
                             onChange={(e) => setDisplayName(e.target.value)}
-                            className="w-full px-6 py-5 bg-gray-50/50 border-2 border-slate/5 focus:border-pear rounded-[24px] text-sm font-bold text-slate focus:outline-none transition-all placeholder:text-gray-300"
+                            className="w-full px-6 py-5 bg-vanilla/50 border-2 border-transparent focus:border-slate focus:bg-white rounded-[24px] text-sm font-bold text-slate focus:outline-none transition-all placeholder:text-gray-300"
                             placeholder="Ej. Inversiones Melo"
                             required
                          />
@@ -159,12 +147,12 @@ const ProfilePage: React.FC = () => {
                       
                       {/* Email */}
                       <div className="space-y-2">
-                         <label className="text-[10px] font-black uppercase tracking-widest text-slate ml-2">Correo Electrónico</label>
+                         <label className="text-[10px] font-black uppercase tracking-widest text-slate ml-2 italic">Correo Electrónico</label>
                          <input 
                             type="email" 
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
-                            className="w-full px-6 py-5 bg-gray-50/50 border-2 border-slate/5 focus:border-pear rounded-[24px] text-sm font-bold text-slate focus:outline-none transition-all placeholder:text-gray-300"
+                            className="w-full px-6 py-5 bg-vanilla/50 border-2 border-transparent focus:border-slate focus:bg-white rounded-[24px] text-sm font-bold text-slate focus:outline-none transition-all placeholder:text-gray-300"
                             placeholder="correo@ejemplo.com"
                          />
                       </div>
@@ -172,136 +160,73 @@ const ProfilePage: React.FC = () => {
                       {/* Password */}
                       <div className="space-y-2 pt-2">
                          <div className="flex items-center justify-between ml-2 mb-2">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-slate">Nueva Clave</label>
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate italic">Cambiar Contraseña</label>
                             <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Opcional</span>
                          </div>
                          <input 
                             type="password" 
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            className="w-full px-6 py-5 bg-gray-50/50 border-2 border-slate/5 focus:border-pear rounded-[24px] text-sm font-bold text-slate focus:outline-none transition-all placeholder:text-gray-300"
+                            className="w-full px-6 py-5 bg-vanilla/50 border-2 border-transparent focus:border-slate focus:bg-white rounded-[24px] text-sm font-bold text-slate focus:outline-none transition-all placeholder:text-gray-300"
                             placeholder="Min. 6 caracteres"
                             minLength={6}
                          />
-                         <p className="text-[10px] font-bold text-gray-400 mt-2 ml-2 leading-relaxed max-w-sm">Si cambias el correo o la clave, el sistema cerrará tu sesión por políticas de seguridad bancaria.</p>
+                         <p className="text-[10px] font-bold text-gray-400 mt-2 ml-2 leading-relaxed max-w-sm italic">Si cambias el correo o la clave, el sistema cerrará tu sesión por seguridad bancaria.</p>
                       </div>
                    </div>
                    <div className="pt-4 flex justify-end gap-3">
                       <button type="button" onClick={() => setIsEditing(false)} className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-slate transition-colors">Cancelar</button>
                       <button type="submit" disabled={loading} className="px-10 py-5 bg-slate text-pear rounded-[24px] text-[10px] font-black uppercase tracking-widest shadow-xl hover:scale-105 transition-all disabled:opacity-50">
-                         {loading ? 'Guardando...' : 'Guardar Cambios'}
+                         {loading ? 'Sincronizando...' : 'Guardar Cambios'}
                       </button>
                    </div>
                 </form>
              </div>
            ) : (
-             <div className="space-y-6">
+             <div className="space-y-8">
                 
-                {/* CONFIGURACIÓN MÓDULO */}
-                <div>
-                   <h3 className="text-[10px] font-black uppercase text-gray-400 tracking-[0.3em] mb-4 ml-4">Configuración</h3>
-                   <div className="bg-white rounded-[40px] border border-slate/5 shadow-xl overflow-hidden divide-y divide-slate/5">
-                      <div className="p-8 flex items-center justify-between group hover:bg-gray-50 transition-colors cursor-pointer">
-                         <div className="flex items-center gap-5">
-                            <div className="w-12 h-12 bg-gray-100 text-gray-400 group-hover:bg-slate group-hover:text-pear transition-colors rounded-[20px] flex items-center justify-center">
-                               <Bell size={20} />
-                            </div>
-                            <div>
-                               <h4 className="font-black text-slate text-[15px] uppercase italic tracking-tight">Notificaciones In-App</h4>
-                               <p className="text-[10px] font-bold text-gray-400 tracking-wide mt-1">Habilitadas en tu flujo de trabajo</p>
-                            </div>
-                         </div>
-                         <div className="w-10 h-5 bg-emerald-500 rounded-full relative shadow-inner">
-                            <div className="absolute right-1 top-1 w-3 h-3 bg-white rounded-full shadow-md"></div>
-                         </div>
+                {/* ACCOUNT SECURITY PREVIEW */}
+                <div className="bg-white p-8 md:p-12 rounded-[44px] border border-slate/5 shadow-xl relative overflow-hidden">
+                   <div className="absolute top-0 right-0 p-8">
+                      <ShieldCheck size={48} className="text-emerald-500/10" />
+                   </div>
+                   <h3 className="text-[10px] font-black uppercase text-gray-300 tracking-[0.4em] mb-6">Seguridad de la Cuenta</h3>
+                   <div className="space-y-6">
+                      <div className="flex items-center justify-between py-4 border-b border-gray-50">
+                         <span className="text-xs font-bold text-slate uppercase italic">Estado de Verificación</span>
+                         <span className="px-4 py-1.5 bg-emerald-50 text-emerald-600 rounded-full text-[9px] font-black uppercase tracking-widest">Verificado</span>
                       </div>
-
-                      <div className="p-8 flex items-center justify-between group hover:bg-gray-50 transition-colors cursor-pointer">
-                         <div className="flex items-center gap-5">
-                            <div className="w-12 h-12 bg-gray-100 text-gray-400 group-hover:bg-slate group-hover:text-pear transition-colors rounded-[20px] flex items-center justify-center">
-                               <ShieldCheck size={20} />
-                            </div>
-                            <div>
-                               <h4 className="font-black text-slate text-[15px] uppercase italic tracking-tight">Verificación y Seguridad</h4>
-                               <p className="text-[10px] font-bold text-gray-400 tracking-wide mt-1">Configura autenticación de acceso</p>
-                            </div>
-                         </div>
-                         <ChevronRight className="text-gray-300 group-hover:text-pear transition-colors" size={20} />
+                      <div className="flex items-center justify-between py-4 border-b border-gray-50">
+                         <span className="text-xs font-bold text-slate uppercase italic">Método de Acceso</span>
+                         <span className="text-xs font-black text-slate uppercase italic">Correo y Contraseña</span>
                       </div>
-                      
-                      <div className="p-8 flex items-center justify-between group hover:bg-gray-50 transition-colors cursor-not-allowed opacity-60">
-                         <div className="flex items-center gap-5">
-                            <div className="w-12 h-12 bg-gray-100 text-gray-400 group-hover:bg-slate group-hover:text-pear transition-colors rounded-[20px] flex items-center justify-center">
-                               <CreditCard size={20} />
-                            </div>
-                            <div>
-                               <h4 className="font-black text-slate text-[15px] uppercase italic tracking-tight">Cuentas Receptoras</h4>
-                               <p className="text-[10px] font-bold text-gray-400 tracking-wide mt-1">Gestión de Zelle, Pago Móvil (Próximamente)</p>
-                            </div>
-                         </div>
-                         <Lock className="text-gray-300" size={16} />
+                      <div className="flex items-center justify-between py-4">
+                         <span className="text-xs font-bold text-slate uppercase italic">Nivel de Privacidad</span>
+                         <span className="text-xs font-black text-slate uppercase italic">End-to-End Encryption</span>
                       </div>
                    </div>
                 </div>
 
-                {/* AYUDA Y SOPORTE MÓDULO */}
-                <div>
-                   <h3 className="text-[10px] font-black uppercase text-gray-400 tracking-[0.3em] mb-4 mt-8 ml-4">Asistencia</h3>
-                   <div className="bg-white rounded-[40px] border border-slate/5 shadow-xl overflow-hidden divide-y divide-slate/5">
-                      <div className="p-8 flex items-center justify-between group hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => alert("Centro de Ayuda abriendo...")}>
-                         <div className="flex items-center gap-5">
-                            <div className="w-12 h-12 bg-sky-50 text-sky-500 rounded-[20px] flex items-center justify-center group-hover:scale-105 transition-transform">
-                               <HelpCircle size={20} />
-                            </div>
-                            <div>
-                               <h4 className="font-black text-slate text-[15px] uppercase italic tracking-tight">Centro de Ayuda</h4>
-                               <p className="text-[10px] font-bold text-gray-400 tracking-wide mt-1">Dudas frecuentes y tutoriales básicos</p>
-                            </div>
-                         </div>
-                         <ExternalLink className="text-gray-300 group-hover:text-sky-500 transition-colors" size={18} />
-                      </div>
-                      <div className="p-8 flex items-center justify-between group hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => alert("Abriendo chat de soporte técnico...")}>
-                         <div className="flex items-center gap-5">
-                            <div className="w-12 h-12 bg-indigo-50 text-indigo-500 rounded-[20px] flex items-center justify-center group-hover:scale-105 transition-transform">
-                               <Smartphone size={20} />
-                            </div>
-                            <div>
-                               <h4 className="font-black text-slate text-[15px] uppercase italic tracking-tight">Contactar Soporte Técnico</h4>
-                               <p className="text-[10px] font-bold text-gray-400 tracking-wide mt-1">Asistencia directa con agentes Melo</p>
-                            </div>
-                         </div>
-                         <ExternalLink className="text-gray-300 group-hover:text-indigo-500 transition-colors" size={18} />
-                      </div>
+                {/* LOGOUT ACTION */}
+                <div className="bg-rose-50/50 p-8 rounded-[44px] border border-rose-100/50 flex flex-col md:flex-row items-center justify-between gap-6 shadow-sm">
+                   <div className="space-y-1 text-center md:text-left">
+                      <h4 className="font-black text-rose-600 text-[15px] uppercase italic tracking-tight underline decoration-rose-200 underline-offset-4">Zona de Riesgo</h4>
+                      <p className="text-[10px] font-bold text-rose-400 tracking-wide mt-1 italic uppercase">Finalizar todas las sesiones activas en este equipo</p>
                    </div>
-                </div>
-
-                {/* ACERCA DE MÓDULO */}
-                <div>
-                   <h3 className="text-[10px] font-black uppercase text-gray-400 tracking-[0.3em] mb-4 mt-8 ml-4">Acerca De</h3>
-                   <div className="bg-white rounded-[40px] border border-slate/5 shadow-xl overflow-hidden p-8 flex flex-col items-center justify-center text-center">
-                      <div className="w-16 h-16 bg-slate text-pear rounded-[24px] flex items-center justify-center mb-6 shadow-2xl">
-                         <Info size={28} />
-                      </div>
-                      <h4 className="font-black text-slate text-xl uppercase italic tracking-tight">MELO</h4>
-                      <p className="text-xs font-bold text-gray-400 tracking-wide mt-2 max-w-xs leading-relaxed">
-                         Diseñado con tecnología de punta para la gestión de créditos inteligente, resiliencia inflacionaria y auditoría centralizada en tiempo real.
-                      </p>
-                      <span className="mt-6 px-4 py-1.5 bg-gray-50 text-gray-400 rounded-full text-[9px] font-black uppercase tracking-widest border border-gray-100">
-                         Versión 2.0.0 (Cloud Sync)
-                      </span>
-                   </div>
+                   <button 
+                     onClick={handleSignOut}
+                     className="px-10 py-5 bg-white text-rose-500 border border-rose-200 rounded-[24px] text-[10px] font-black uppercase tracking-widest shadow-xl hover:bg-rose-500 hover:text-white transition-all active:scale-95"
+                   >
+                     Cerrar Sesión
+                   </button>
                 </div>
 
              </div>
            )}
-
-
         </div>
-
       </div>
     </div>
   );
 };
 
 export default ProfilePage;
-

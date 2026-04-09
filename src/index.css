@@ -13,7 +13,7 @@
 
 @layer base {
   body {
-    @apply antialiased text-slate bg-vanilla font-sans;
+    @apply antialiased text-slate bg-vanilla font-sans overflow-x-hidden;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 }
@@ -80,5 +80,12 @@
   }
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
     background: rgba(252, 255, 59, 0.2);
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
 }

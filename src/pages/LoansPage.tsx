@@ -8,9 +8,7 @@ import {
   Clock, 
   CheckCircle2, 
   AlertCircle,
-  ArrowUpRight,
   Filter,
-  DollarSign,
   ChevronRight,
   RefreshCcw,
   Ban
@@ -59,17 +57,17 @@ const LoansPage: React.FC = () => {
   };
 
   return (
-    <div className="p-4 md:p-12 space-y-8 md:space-y-12 animate-in fade-in duration-700 pb-36 md:pb-16">
+    <div className="space-y-8 md:space-y-12 animate-in fade-in duration-700 pb-36 md:pb-16">
       
       {/* HEADER */}
-      <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
-        <div className="space-y-2">
-          <h1 className="text-4xl md:text-6xl font-black text-slate tracking-tighter italic leading-none">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+        <div className="space-y-1">
+          <h1 className="text-3xl md:text-5xl font-black text-slate tracking-tighter uppercase italic leading-none">
             Mis Préstamos
-            <span className="text-pear italic">.</span>
+            <span className="text-pear">.</span>
           </h1>
-          <p className="text-gray-400 font-bold text-xs tracking-tight">
-            Gestión de <span className="text-slate">{loans.length}</span> créditos activos
+          <p className="text-gray-400 font-bold text-[10px] uppercase tracking-widest">
+            {loans.length} créditos en gestión
           </p>
         </div>
 
@@ -140,135 +138,128 @@ const LoansPage: React.FC = () => {
 
       {/* LOANS LIST Content */}
       {loading && loans.length === 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-           {[1,2,3].map(i => (
-             <div key={i} className="h-64 bg-gray-50 rounded-[44px] animate-pulse"></div>
+        <div className="space-y-4">
+           {[1,2,3,4].map(i => (
+             <div key={i} className="h-20 bg-gray-50 rounded-[24px] animate-pulse"></div>
            ))}
         </div>
       ) : filteredLoans.length > 0 ? (
-        <div className="space-y-10">
+        <div className="space-y-6">
           
-          {/* MOBILE VIEW: WhatsApp Chat Style */}
-          <div className="block lg:hidden space-y-4 bg-white rounded-[40px] border border-slate/5 overflow-hidden p-4 shadow-sm">
-             {filteredLoans.map((loan: Loan) => {
-               const progress = (loan.paidInstallmentsCount / loan.numberOfInstallments) * 100;
-               return (
-                 <Link 
-                   key={loan.id} 
-                   to={`/prestamos/${loan.id}`}
-                   className="flex items-center gap-4 py-4 px-2 active:bg-gray-50 transition-colors border-b border-gray-50 last:border-0 group"
-                 >
-                    {/* Avatar Initials */}
-                    <div className="w-14 h-14 bg-slate text-pear rounded-2xl flex items-center justify-center font-black text-xs shadow-md shrink-0">
-                       {loan.clientName[0].toUpperCase()}
-                    </div>
-                    
-                    {/* Info */}
-                    <div className="flex-1 min-w-0 space-y-1">
-                       <div className="flex justify-between items-center">
-                          <h3 className="font-black text-[14px] text-slate truncate group-hover:text-indigo-600 transition-colors italic uppercase leading-tight">
-                            {loan.clientName}
-                          </h3>
-                          <span className="text-[11px] font-[900] italic text-slate">
-                            {loan.currency === 'USD' ? '$' : 'Bs.'}{loan.totalToPay.toLocaleString(undefined, { minimumFractionDigits: 1 })}
-                          </span>
-                       </div>
-                       
-                       <div className="flex justify-between items-center text-[9px] font-black uppercase tracking-widest text-gray-400">
-                          <span className={loan.status === 'overdue' ? 'text-rose-500 underline decoration-rose-300' : ''}>
-                             {loan.status === 'active' ? 'En Curso' : 
-                              loan.status === 'completed' ? 'Finalizado' : 
-                              loan.status === 'cancelled' ? 'Cancelado' : '🔴 Vencido'}
-                          </span>
-                          <span>{progress.toFixed(0)}%</span>
-                       </div>
+          <div className="bg-white rounded-[32px] md:rounded-[48px] border border-slate/5 shadow-3xl shadow-slate/5 overflow-hidden">
+            
+            {/* MOBILE LIST VIEW */}
+            <div className="lg:hidden divide-y divide-gray-50">
+               {filteredLoans.map((loan: Loan) => {
+                 const progress = (loan.paidInstallmentsCount / loan.numberOfInstallments) * 100;
+                 return (
+                   <Link 
+                     key={loan.id} 
+                     to={`/prestamos/${loan.id}`}
+                     className="flex items-center gap-4 p-5 md:p-6 active:bg-gray-50 transition-colors group"
+                   >
+                      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black text-xs shadow-inner shrink-0 ${loan.status === 'overdue' ? 'bg-rose-50 text-rose-500' : 'bg-slate text-pear'}`}>
+                         {loan.clientName[0].toUpperCase()}
+                      </div>
+                      
+                      <div className="flex-1 min-w-0">
+                         <div className="flex justify-between items-start mb-1">
+                            <h3 className="font-black text-[13px] text-slate truncate uppercase italic leading-none">
+                              {loan.clientName}
+                            </h3>
+                            <span className={`text-[10px] font-black italic ${loan.status === 'overdue' ? 'text-rose-500' : 'text-slate'}`}>
+                              {loan.currency === 'USD' ? '$' : 'Bs.'}{loan.totalToPay.toLocaleString(undefined, { minimumFractionDigits: 1 })}
+                            </span>
+                         </div>
+                         
+                         <div className="flex justify-between items-center mb-2">
+                            <span className={`text-[8px] font-black uppercase tracking-widest ${loan.status === 'overdue' ? 'text-rose-500' : 'text-gray-400'}`}>
+                               {loan.status === 'active' ? 'En Curso' : 
+                                loan.status === 'completed' ? 'Finalizado' : 
+                                loan.status === 'cancelled' ? 'Cancelado' : 'Vencido'}
+                            </span>
+                            <span className="text-[8px] font-black text-gray-400">{progress.toFixed(0)}%</span>
+                         </div>
 
-                       {/* Progress Bar Compact */}
-                       <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden mt-1">
-                          <div 
-                            className={`h-full transition-all duration-1000 rounded-full ${loan.status === 'completed' ? 'bg-emerald-500' : loan.status === 'overdue' ? 'bg-rose-500' : 'bg-pear'}`}
-                            style={{ width: `${progress}%` }}
-                          ></div>
-                       </div>
-                    </div>
+                         <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                            <div 
+                              className={`h-full transition-all duration-1000 ${loan.status === 'completed' ? 'bg-emerald-500' : loan.status === 'overdue' ? 'bg-rose-500' : 'bg-pear'}`}
+                              style={{ width: `${progress}%` }}
+                            ></div>
+                         </div>
+                      </div>
+                      <ChevronRight size={14} className="text-gray-200" />
+                   </Link>
+                 );
+               })}
+            </div>
 
-                    <ChevronRight size={16} className="text-gray-200 shrink-0" />
-                 </Link>
-               );
-             })}
+            {/* DESKTOP TABLE VIEW */}
+            <div className="hidden lg:block overflow-x-auto">
+               <table className="w-full text-left border-collapse">
+                  <thead>
+                     <tr className="bg-vanilla/50">
+                        <th className="px-8 py-6 text-[10px] font-black uppercase tracking-[0.3em] text-gray-300">Cliente</th>
+                        <th className="px-8 py-6 text-[10px] font-black uppercase tracking-[0.3em] text-gray-300">Estado</th>
+                        <th className="px-8 py-6 text-[10px] font-black uppercase tracking-[0.3em] text-gray-300">Progreso</th>
+                        <th className="px-8 py-6 text-[10px] font-black uppercase tracking-[0.3em] text-gray-300">Saldo Total</th>
+                        <th className="px-8 py-6 text-[10px] font-black uppercase tracking-[0.3em] text-gray-300 text-right">Acción</th>
+                     </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-50">
+                     {filteredLoans.map((loan: Loan) => {
+                       const progress = ((loan.paidInstallmentsCount || 0) / (loan.numberOfInstallments || 1)) * 100;
+                       return (
+                         <tr key={loan.id} className="hover:bg-vanilla/30 transition-all group">
+                            <td className="px-8 py-6">
+                               <div className="flex items-center gap-4">
+                                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black text-xs shadow-inner ${loan.status === 'overdue' ? 'bg-rose-50 text-rose-500' : 'bg-slate text-pear'}`}>
+                                     {loan.clientName.substring(0, 2).toUpperCase()}
+                                  </div>
+                                  <div className="flex flex-col">
+                                     <span className="font-black text-sm uppercase italic tracking-tighter text-slate">{loan.clientName}</span>
+                                     <span className="text-[9px] font-bold text-gray-300 uppercase mt-0.5">{loan.paidInstallmentsCount} de {loan.numberOfInstallments} cuotas</span>
+                                  </div>
+                               </div>
+                            </td>
+                            <td className="px-8 py-6">
+                               <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest flex items-center gap-2 w-fit ${getStatusColor(loan.status)}`}>
+                                  {getStatusIcon(loan.status)}
+                                  {loan.status === 'active' ? 'En Curso' : loan.status === 'completed' ? 'Finalizado' : 'Vencido'}
+                               </span>
+                            </td>
+                            <td className="px-8 py-6">
+                               <div className="flex items-center gap-4 min-w-[150px]">
+                                  <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+                                     <div 
+                                       className={`h-full transition-all duration-1000 ${loan.status === 'completed' ? 'bg-emerald-500' : loan.status === 'overdue' ? 'bg-rose-500' : 'bg-pear'}`}
+                                       style={{ width: `${progress}%` }}
+                                     ></div>
+                                  </div>
+                                  <span className="text-[10px] font-black italic text-slate">{progress.toFixed(0)}%</span>
+                               </div>
+                            </td>
+                            <td className="px-8 py-6">
+                               <p className="text-lg font-black italic tracking-tighter text-slate leading-none">
+                                  {loan.currency === 'USD' ? '$' : 'Bs.'}{loan.totalToPay.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                               </p>
+                            </td>
+                            <td className="px-8 py-6 text-right">
+                               <Link 
+                                 to={`/prestamos/${loan.id}`}
+                                 className="inline-flex items-center gap-2 px-5 py-2.5 bg-vanilla border border-slate/5 text-[9px] font-black uppercase tracking-widest text-slate rounded-xl hover:bg-slate hover:text-white transition-all group/btn"
+                               >
+                                  Ver Detalles <ChevronRight size={14} className="group-hover/btn:translate-x-1 transition-transform" />
+                               </Link>
+                            </td>
+                         </tr>
+                       );
+                     })}
+                  </tbody>
+               </table>
+            </div>
           </div>
 
-          {/* DESKTOP VIEW: Premium Grid Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 px-4 md:px-0">
-             {filteredLoans.map((loan: Loan) => {
-               const progress = ((loan.paidInstallmentsCount || 0) / (loan.numberOfInstallments || 1)) * 100;
-               return (
-                 <div key={loan.id} className="group bg-white p-8 rounded-[44px] border border-slate/5 hover:border-slate/10 transition-all duration-500 hover:shadow-2xl relative overflow-hidden flex flex-col justify-between">
-                    
-                    {/* Status Badge */}
-                    <div className="flex justify-between items-start mb-6">
-                       <div className={`px-4 py-1.5 rounded-full border text-[9px] font-[900] uppercase tracking-[0.2em] flex items-center gap-2 ${getStatusColor(loan.status)}`}>
-                          {getStatusIcon(loan.status)}
-                          {loan.status === 'active' ? 'En Curso' : loan.status === 'completed' ? 'Finalizado' : 'Vencido'}
-                       </div>
-                       <Link to={`/prestamos/${loan.id}`} className="p-2 bg-gray-50 text-gray-400 hover:text-slate rounded-xl transition-all">
-                          <ArrowUpRight size={18} />
-                       </Link>
-                    </div>
-
-                    {/* Client & Info */}
-                    <div className="mb-8">
-                       <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Deudor</p>
-                       <h3 className="text-2xl font-black text-slate tracking-tighter uppercase italic truncate group-hover:text-indigo-600 transition-colors">
-                         {loan.clientName}
-                       </h3>
-                    </div>
-
-                    {/* Amount & Progress */}
-                    <div className="space-y-6">
-                       <div className="flex justify-between items-end">
-                          <div className="space-y-1">
-                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Saldo Total</p>
-                             <div className="flex items-baseline gap-1">
-                                <span className="text-3xl font-[900] italic tracking-tighter text-slate">
-                                  {loan.currency === 'USD' ? <DollarSign size={20} className="inline mb-1 mr-0.5 opacity-20" /> : 'Bs.'}{loan.totalToPay.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                                </span>
-                             </div>
-                          </div>
-                          <div className="text-right">
-                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Pagado</p>
-                             <p className="text-sm font-[900] text-emerald-500">{progress.toFixed(0)}%</p>
-                          </div>
-                       </div>
-
-                       {/* Progress Bar */}
-                       <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
-                          <div 
-                            className={`h-full transition-all duration-1000 ease-out rounded-full ${loan.status === 'completed' ? 'bg-emerald-500' : 'bg-pear'}`}
-                            style={{ width: `${progress}%` }}
-                          ></div>
-                       </div>
-
-                       <div className="flex justify-between items-center text-[9px] font-black uppercase tracking-[0.2em] text-gray-400">
-                         <span>{loan.paidInstallmentsCount} Pagos</span>
-                         <span>{loan.numberOfInstallments} Total</span>
-                       </div>
-                    </div>
-
-                    {/* Quick Footer */}
-                    <Link 
-                      to={`/prestamos/${loan.id}`}
-                      className="mt-8 pt-6 border-t border-gray-50 flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-slate hover:gap-2 transition-all group/btn"
-                    >
-                      <span>Detalle de cuotas</span>
-                      <ChevronRight size={16} className="text-pear group-hover/btn:translate-x-1 transition-transform" />
-                    </Link>
-                 </div>
-               );
-             })}
-          </div>
-
-          {/* Load More */}
           {hasMore && (
              <div className="flex justify-center pt-8">
                 <button 
