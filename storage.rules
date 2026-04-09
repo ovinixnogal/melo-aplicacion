@@ -1,0 +1,23 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Auth Helpers
+    function isSignedIn() { return request.auth != null; }
+    function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
+
+    // Validates that the file is an image and doesn't exceed 5MB
+    function isValidImage() {
+      return request.resource.size <= 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/(jpeg|png|webp|gif|svg\\+xml)');
+    }
+
+    // Match any file under a user-specific folder (e.g., /users/{uid}/clients/{clientId}/photo.jpg)
+    // The architecture follows: users/{uid}/**
+    match /users/{userId}/{allPaths=**} {
+      allow read: if isOwner(userId);
+      allow write: if isOwner(userId) && isValidImage();
+    }
+  }
+}
