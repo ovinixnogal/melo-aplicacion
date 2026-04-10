@@ -23,6 +23,91 @@ import { useSubscription } from '../hooks/useSubscription';
 import NotificationsPopover from '../components/ui/NotificationsPopover';
 import OnboardingModal from '../components/ui/OnboardingModal';
 
+const menuItems = [
+  { name: 'Inicio', path: '/dashboard', icon: Home },
+  { name: 'Capital', path: '/capital', icon: Briefcase },
+  { name: 'Clientes', path: '/clientes', icon: UserSearch },
+  { name: 'Préstamos', path: '/prestamos', icon: Wallet },
+  { name: 'Calendario', path: '/calendario', icon: Calendar },
+  { name: 'Historial', path: '/historial', icon: History },
+  { name: 'Mi Cuenta', path: '/perfil', icon: UserSearch },
+  { name: 'Ajustes', path: '/ajustes', icon: Settings },
+];
+
+const getInitials = (name: string | null | undefined) => {
+  if (!name) return 'U';
+  return name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+};
+
+interface SidebarContentProps {
+  user: any;
+  location: any;
+  setMobileMenuOpen: (open: boolean) => void;
+  handleLogout: () => Promise<void>;
+}
+
+const SidebarContent: React.FC<SidebarContentProps> = ({
+  user,
+  location,
+  setMobileMenuOpen,
+  handleLogout
+}) => (
+  <div className="flex flex-col h-full bg-slate text-white selection:bg-pear selection:text-slate overflow-hidden">
+    <div className="px-8 py-8 md:py-10 flex items-center justify-between shrink-0">
+      <div className="flex items-center gap-4">
+        <div className="w-11 h-11 bg-pear text-slate rounded-[18px] flex items-center justify-center font-black text-2xl shadow-2xl transform rotate-3 hover:rotate-0 transition-transform cursor-pointer shadow-pear/20">
+           M
+        </div>
+        <span className="text-xl font-black tracking-tighter uppercase italic text-white">MELO</span>
+      </div>
+      <button onClick={() => setMobileMenuOpen(false)} className="md:hidden p-2.5 bg-white/5 text-white/40 hover:text-white rounded-xl transition-colors">
+        <X size={24} />
+      </button>
+    </div>
+
+    <nav className="flex-1 px-5 py-2 space-y-2 overflow-y-auto custom-scrollbar">
+      {menuItems.map((item) => (
+        <NavLink
+          key={item.path}
+          to={item.path}
+          onClick={() => setMobileMenuOpen(false)}
+          className={({ isActive }) => `
+            flex items-center gap-5 px-6 py-4 rounded-[22px] transition-all duration-500 group
+            ${isActive
+              ? 'bg-pear text-slate font-black shadow-2xl shadow-pear/10 translate-x-2'
+              : 'text-white/40 hover:text-white hover:bg-white/5'}
+          `}
+        >
+          <item.icon size={22} className={`transition-transform duration-500 ${location.pathname === item.path ? 'scale-110' : 'group-hover:scale-110'}`} />
+          <span className="text-[11px] font-black uppercase tracking-[0.25em]">{item.name}</span>
+        </NavLink>
+      ))}
+    </nav>
+
+    <div className="p-6 md:p-8 border-t border-white/5 space-y-6 md:space-y-8 shrink-0">
+      <div className="bg-white/5 p-4 rounded-[28px] border border-white/5 shadow-inner">
+         <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center text-pear font-black text-sm shadow-xl border border-white/5">
+               {getInitials(user?.displayName)}
+            </div>
+            <div className="min-w-0">
+               <p className="text-[11px] font-black text-white truncate uppercase tracking-wider">{user?.displayName?.split(' ')[0] || 'Usuario'}</p>
+               <p className="text-[9px] text-white/30 font-black tracking-[0.2em] uppercase mt-1 italic">Cuenta Verificada</p>
+            </div>
+         </div>
+      </div>
+
+      <button
+        onClick={handleLogout}
+        className="w-full flex items-center gap-4 px-6 py-3.5 text-white/30 hover:text-rose-500 hover:bg-rose-500/10 transition-all duration-500 rounded-[24px] group"
+      >
+        <LogOut size={20} className="group-hover:translate-x-1 group-hover:rotate-6 transition-all" />
+        <span className="text-[11px] font-black uppercase tracking-[0.2em] text-left">Desconectar</span>
+      </button>
+    </div>
+  </div>
+);
+
 const DashboardLayout: React.FC = () => {
   const { user } = useAuth();
   const location = useLocation();
@@ -51,90 +136,22 @@ const DashboardLayout: React.FC = () => {
     }
   };
 
-  const menuItems = [
-    { name: 'Inicio', path: '/dashboard', icon: Home },
-    { name: 'Capital', path: '/capital', icon: Briefcase },
-    { name: 'Clientes', path: '/clientes', icon: UserSearch },
-    { name: 'Préstamos', path: '/prestamos', icon: Wallet },
-    { name: 'Calendario', path: '/calendario', icon: Calendar },
-    { name: 'Historial', path: '/historial', icon: History },
-    { name: 'Mi Cuenta', path: '/perfil', icon: UserSearch },
-    { name: 'Ajustes', path: '/ajustes', icon: Settings },
-  ];
-
   const getSectionName = () => {
     const current = menuItems.find(i => i.path === location.pathname);
     return current ? current.name : 'MELO';
   };
-
-  const getInitials = (name: string | null | undefined) => {
-    if (!name) return 'U';
-    return name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
-  };
-
-  const SidebarContent = () => (
-    <div className="flex flex-col h-full bg-slate text-white selection:bg-pear selection:text-slate overflow-hidden">
-      <div className="px-8 py-8 md:py-10 flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-4">
-          <div className="w-11 h-11 bg-pear text-slate rounded-[18px] flex items-center justify-center font-black text-2xl shadow-2xl transform rotate-3 hover:rotate-0 transition-transform cursor-pointer shadow-pear/20">
-             M
-          </div>
-          <span className="text-xl font-black tracking-tighter uppercase italic text-white">MELO</span>
-        </div>
-        <button onClick={() => setMobileMenuOpen(false)} className="md:hidden p-2.5 bg-white/5 text-white/40 hover:text-white rounded-xl transition-colors">
-          <X size={24} />
-        </button>
-      </div>
-
-      <nav className="flex-1 px-5 py-2 space-y-2 overflow-y-auto custom-scrollbar">
-        {menuItems.map((item) => (
-          <NavLink
-            key={item.path}
-            to={item.path}
-            onClick={() => setMobileMenuOpen(false)}
-            className={({ isActive }) => `
-              flex items-center gap-5 px-6 py-4 rounded-[22px] transition-all duration-500 group
-              ${isActive 
-                ? 'bg-pear text-slate font-black shadow-2xl shadow-pear/10 translate-x-2' 
-                : 'text-white/40 hover:text-white hover:bg-white/5'}
-            `}
-          >
-            <item.icon size={22} className={`transition-transform duration-500 ${location.pathname === item.path ? 'scale-110' : 'group-hover:scale-110'}`} />
-            <span className="text-[11px] font-black uppercase tracking-[0.25em]">{item.name}</span>
-          </NavLink>
-        ))}
-      </nav>
-
-      <div className="p-6 md:p-8 border-t border-white/5 space-y-6 md:space-y-8 shrink-0">
-        <div className="bg-white/5 p-4 rounded-[28px] border border-white/5 shadow-inner">
-           <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center text-pear font-black text-sm shadow-xl border border-white/5">
-                 {getInitials(user?.displayName)}
-              </div>
-              <div className="min-w-0">
-                 <p className="text-[11px] font-black text-white truncate uppercase tracking-wider">{user?.displayName?.split(' ')[0] || 'Usuario'}</p>
-                 <p className="text-[9px] text-white/30 font-black tracking-[0.2em] uppercase mt-1 italic">Cuenta Verificada</p>
-              </div>
-           </div>
-        </div>
-        
-        <button 
-          onClick={handleLogout}
-          className="w-full flex items-center gap-4 px-6 py-3.5 text-white/30 hover:text-rose-500 hover:bg-rose-500/10 transition-all duration-500 rounded-[24px] group"
-        >
-          <LogOut size={20} className="group-hover:translate-x-1 group-hover:rotate-6 transition-all" />
-          <span className="text-[11px] font-black uppercase tracking-[0.2em] text-left">Desconectar</span>
-        </button>
-      </div>
-    </div>
-  );
 
   return (
     <div className="min-h-screen bg-vanilla font-sans selection:bg-pear selection:text-slate overflow-x-hidden">
       
       {/* 1. SIDEBAR DESKTOP */}
       <aside className="hidden md:flex flex-col fixed left-4 top-4 bottom-4 w-72 z-50 rounded-[48px] overflow-hidden shadow-2xl shadow-slate/20 border border-slate/5">
-        <SidebarContent />
+        <SidebarContent
+          user={user}
+          location={location}
+          setMobileMenuOpen={setMobileMenuOpen}
+          handleLogout={handleLogout}
+        />
       </aside>
 
       {/* 2. DRAWER SIDEBAR MOBILE */}
@@ -142,7 +159,12 @@ const DashboardLayout: React.FC = () => {
         <div className="absolute inset-0 bg-slate/80 backdrop-blur-md" onClick={() => setMobileMenuOpen(false)}></div>
         
         <div className={`absolute top-0 left-0 h-full w-[85%] max-w-sm transition-transform duration-500 cubic-bezier(0.4, 0, 0.2, 1) transform ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-          <SidebarContent />
+          <SidebarContent
+            user={user}
+            location={location}
+            setMobileMenuOpen={setMobileMenuOpen}
+            handleLogout={handleLogout}
+          />
         </div>
       </div>
 
