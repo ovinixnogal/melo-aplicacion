@@ -11,84 +11,98 @@ import {
   Cpu
 } from 'lucide-react';
 
+const adminMenuItems = [
+  { name: 'Dashboard', path: '/admin', icon: BarChart },
+  { name: 'Usuarios', path: '/admin/users', icon: Users },
+  { name: 'Suscripciones', path: '/admin/subscriptions', icon: ShieldCheck },
+  { name: 'Pagos', path: '/admin/payments', icon: CreditCard },
+  { name: 'Sistema', path: '/admin/system', icon: Cpu },
+];
+
+interface SidebarContentProps {
+  location: any;
+  setMobileMenuOpen: (open: boolean) => void;
+  navigate: (path: string) => void;
+}
+
+const SidebarContent: React.FC<SidebarContentProps> = ({
+  location,
+  setMobileMenuOpen,
+  navigate
+}) => (
+  <div className="flex flex-col h-full bg-slate text-white selection:bg-pear selection:text-slate">
+    <div className="px-8 py-10 flex items-center justify-between">
+      <div className="flex items-center gap-4">
+        <div className="w-11 h-11 bg-pear text-slate rounded-[18px] flex items-center justify-center font-black text-2xl shadow-2xl transform rotate-3 hover:rotate-0 transition-transform cursor-pointer shadow-pear/20">
+           A
+        </div>
+        <div className="flex flex-col cursor-pointer hover:opacity-80 transition-opacity">
+          <span className="text-[10px] font-black uppercase tracking-[0.3em] text-pear/80 border-b border-pear/30 pb-0.5 mb-0.5 inline-block w-max">
+            Admin Portal
+          </span>
+          <span className="text-xl font-black italic tracking-tighter leading-none">
+            Melo<span className="text-pear">.</span>
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <nav className="flex-1 px-4 py-8 space-y-3">
+      {adminMenuItems.map((item) => {
+        const Icon = item.icon;
+        const isActive = location.pathname === item.path || (item.path !== '/admin' && location.pathname.startsWith(item.path));
+
+        return (
+          <NavLink
+            key={item.path}
+            to={item.path}
+            end={item.path === '/admin'}
+            onClick={() => setMobileMenuOpen(false)}
+            className={`flex items-center gap-4 px-6 py-4 rounded-[20px] font-black text-[11px] uppercase tracking-widest transition-all duration-300
+              ${isActive
+                ? 'bg-pear text-slate shadow-xl shadow-pear/10 scale-100'
+                : 'text-white/40 hover:bg-white/5 hover:text-white scale-95 hover:scale-100'}`}
+          >
+            <Icon size={18} strokeWidth={isActive ? 3 : 2} className={isActive ? "text-slate" : ""} />
+            {item.name}
+          </NavLink>
+        );
+      })}
+    </nav>
+
+    <div className="px-6 py-8">
+      <button
+        onClick={() => navigate('/dashboard')}
+        className="flex items-center justify-center gap-3 px-6 py-4 w-full bg-white/5 text-white/60 hover:bg-white/10 hover:text-white rounded-[20px] font-black text-[10px] uppercase tracking-widest transition-colors mb-4"
+      >
+        <Home size={16} /> Volver a la App
+      </button>
+    </div>
+  </div>
+);
+
 const AdminLayout: React.FC = () => {
   const { user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [isMobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const menuItems = [
-    { name: 'Dashboard', path: '/admin', icon: BarChart },
-    { name: 'Usuarios', path: '/admin/users', icon: Users },
-    { name: 'Suscripciones', path: '/admin/subscriptions', icon: ShieldCheck },
-    { name: 'Pagos', path: '/admin/payments', icon: CreditCard },
-    { name: 'Sistema', path: '/admin/system', icon: Cpu },
-  ];
-
   const getSectionName = () => {
     if (location.pathname === '/admin') return 'Stats';
-    const current = menuItems.find(i => i.path === location.pathname);
+    const current = adminMenuItems.find(i => i.path === location.pathname);
     return current ? current.name : 'Administración';
   };
-
-  const SidebarContent = () => (
-    <div className="flex flex-col h-full bg-slate text-white selection:bg-pear selection:text-slate">
-      <div className="px-8 py-10 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div className="w-11 h-11 bg-pear text-slate rounded-[18px] flex items-center justify-center font-black text-2xl shadow-2xl transform rotate-3 hover:rotate-0 transition-transform cursor-pointer shadow-pear/20">
-             A
-          </div>
-          <div className="flex flex-col cursor-pointer hover:opacity-80 transition-opacity">
-            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-pear/80 border-b border-pear/30 pb-0.5 mb-0.5 inline-block w-max">
-              Admin Portal
-            </span>
-            <span className="text-xl font-black italic tracking-tighter leading-none">
-              Melo<span className="text-pear">.</span>
-            </span>
-          </div>
-        </div>
-      </div>
-
-      <nav className="flex-1 px-4 py-8 space-y-3">
-        {menuItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = location.pathname === item.path || (item.path !== '/admin' && location.pathname.startsWith(item.path));
-          
-          return (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              end={item.path === '/admin'}
-              onClick={() => setMobileMenuOpen(false)}
-              className={`flex items-center gap-4 px-6 py-4 rounded-[20px] font-black text-[11px] uppercase tracking-widest transition-all duration-300
-                ${isActive 
-                  ? 'bg-pear text-slate shadow-xl shadow-pear/10 scale-100' 
-                  : 'text-white/40 hover:bg-white/5 hover:text-white scale-95 hover:scale-100'}`}
-            >
-              <Icon size={18} strokeWidth={isActive ? 3 : 2} className={isActive ? "text-slate" : ""} />
-              {item.name}
-            </NavLink>
-          );
-        })}
-      </nav>
-
-      <div className="px-6 py-8">
-        <button 
-          onClick={() => navigate('/dashboard')}
-          className="flex items-center justify-center gap-3 px-6 py-4 w-full bg-white/5 text-white/60 hover:bg-white/10 hover:text-white rounded-[20px] font-black text-[10px] uppercase tracking-widest transition-colors mb-4"
-        >
-          <Home size={16} /> Volver a la App
-        </button>
-      </div>
-    </div>
-  );
 
   return (
     <div className="flex h-screen bg-gray-50 overflow-hidden font-sans selection:bg-pear selection:text-slate">
       
       {/* SIDEBAR DESKTOP */}
       <aside className="hidden lg:block w-[300px] shadow-2xl z-20 h-full">
-        <SidebarContent />
+        <SidebarContent
+          location={location}
+          setMobileMenuOpen={setMobileMenuOpen}
+          navigate={navigate}
+        />
       </aside>
 
       {/* MOBILE OVERLAY */}
@@ -105,7 +119,11 @@ const AdminLayout: React.FC = () => {
           isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <SidebarContent />
+        <SidebarContent
+          location={location}
+          setMobileMenuOpen={setMobileMenuOpen}
+          navigate={navigate}
+        />
       </aside>
 
       {/* MAIN LAYOUT */}
